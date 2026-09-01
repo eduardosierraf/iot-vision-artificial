@@ -1,0 +1,18 @@
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Contexto/notas locales del docente (no se versiona)
+context/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Web / node (por si se añaden herramientas de build más adelante)
+node_modules/
+dist/
+.env
+.env.local
+*.log

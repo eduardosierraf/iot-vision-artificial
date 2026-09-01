@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>IoT Visión Artificial — Clase 2: Convolución y Filtros</title>
+<meta name="description" content="Clase 2 — Unidad 02 · Visión por computador: aritmética entre imágenes (suma, resta, blend), qué es una convolución, cómo un kernel transforma una imagen, filtros de suavizado (blur, gaussiano) y de bordes (Sobel, Laplaciano, Canny), con ejemplos en OpenCV.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  /*
+    Mismo sistema visual del resto de la asignatura (ver index.html y
+    VisionClase1_ImagenDigital.html): deck fijado en light mode a propósito,
+    material para proyectar en clase. Tipografías con fallback a system fonts
+    por si el salón no tiene internet.
+
+    Igual que la Clase 1: una idea por diapositiva, pocas palabras, mucho
+    espacio en blanco. Aquí se agregan dos piezas nuevas al sistema:
+    diagramas de kernel (.kernel) y bloques de código OpenCV (.code).
+  */
+  :root {
+    color-scheme: light;
+    --paper: #F2F4F5;
+    --paper-raised: #FFFFFF;
+    --ink: #121316;
+    --muted: #5B5F66;
+    --line: #D7DADD;
+    --red: #D6231D;
+    --red-ink: #FFFFFF;
+    --red-wash: #FBE9E8;
+
+    --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
+
+    --gutter: clamp(24px, 6vw, 96px);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    color-scheme: light;
+  }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 20px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  a { color: inherit; }
+  code { font-family: var(--font-mono); font-size: 0.85em; }
+
+  /* ---------- Deck mechanics ---------- */
+  .deck {
+    height: 100dvh;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .deck { scroll-behavior: auto; }
+  }
+
+  .slide {
+    min-height: 100dvh;
+    width: 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(72px, 10vh, 120px) var(--gutter);
+    position: relative;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: clamp(14px, 1.3vw, 17px);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin: 0 0 20px;
+  }
+
+  .section-index {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: clamp(14px, 1.3vw, 17px);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--red);
+    border: 1px solid var(--red);
+    border-radius: 999px;
+    padding: 6px 16px;
+    margin: 0 0 24px;
+  }
+
+  .slide-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.6rem, 5.8vw, 4.6rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 clamp(28px, 4vw, 48px);
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+
+  .mt-lg { margin-top: clamp(32px, 4.4vw, 52px); }
+  .mt-md { margin-top: clamp(20px, 2.8vw, 32px); }
+
+  .note {
+    font-family: var(--font-body);
+    font-size: clamp(1.05rem, 1.4vw, 1.25rem);
+    letter-spacing: 0;
+    color: var(--muted);
+    max-width: 62ch;
+    line-height: 1.6;
+    margin: clamp(22px, 3vw, 32px) 0 0;
+  }
+
+  /* ---------- Slide 1 — portada ---------- */
+  .slide--title .title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(2.6rem, 6.6vw, 5rem);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin: 0 0 clamp(24px, 3.6vw, 36px);
+    text-wrap: balance;
+    max-width: 16ch;
+  }
+  .subtitle {
+    font-family: var(--font-mono);
+    font-size: clamp(1.15rem, 1.9vw, 1.45rem);
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    margin: 0;
+  }
+
+  .hint {
+    position: absolute;
+    left: var(--gutter);
+    bottom: clamp(28px, 5vh, 48px);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---------- Palabra gigante (una idea, en grande) ---------- */
+  .hero-word {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(4rem, 13vw, 10rem);
+    letter-spacing: -0.03em;
+    line-height: 0.92;
+    color: var(--ink);
+    margin: 0;
+  }
+  .hero-word .accent { color: var(--red); }
+  .hero-sub {
+    font-family: var(--font-body);
+    font-size: clamp(1.25rem, 2vw, 1.6rem);
+    color: var(--muted);
+    margin: clamp(14px, 2vw, 20px) 0 0;
+    letter-spacing: 0;
+    max-width: 48ch;
+  }
+
+  /* ---------- Afirmaciones centrales (tesis), en grande ---------- */
+  .thesis {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.3rem, 4.8vw, 3.6rem);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin: 0;
+    max-width: 22ch;
+    text-wrap: balance;
+    color: var(--muted);
+  }
+  .thesis__accent { color: var(--ink); }
+  .thesis--sm { font-size: clamp(1.9rem, 3.6vw, 2.8rem); max-width: 28ch; }
+
+  /* ---------- Agenda-style numbered list, en grande ---------- */
+  .agenda {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    max-width: 900px;
+  }
+  .agenda li {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(20px, 3vw, 40px);
+    padding: clamp(16px, 2.4vw, 24px) 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .agenda li:first-child { padding-top: 0; }
+  .agenda__num {
+    font-family: var(--font-mono);
+    font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+    color: var(--red);
+    flex-shrink: 0;
+    width: 2.4ch;
+  }
+  .agenda__body { display: flex; flex-direction: column; gap: 6px; }
+  .agenda__name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(1.4rem, 2.4vw, 1.8rem);
+    letter-spacing: -0.005em;
+  }
+  .agenda__desc {
+    font-size: clamp(1.1rem, 1.5vw, 1.3rem);
+    color: var(--muted);
+  }
+
+  /* ---------- Figuras ---------- */
+  .figure-row {
+    display: flex;
+    gap: clamp(16px, 2.6vw, 32px);
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-top: clamp(22px, 3vw, 34px);
+  }
+  .figure { display: flex; flex-direction: column; gap: 10px; }
+  .figure img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--ink);
+    background: var(--paper-raised);
+  }
+  .figure figcaption {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    max-width: 34ch;
+  }
+  .figure--hero img { max-width: min(560px, 100%); max-height: 44vh; width: auto; }
+  .figure--pair img { max-width: min(330px, 42vw); }
+  .figure--trio img { max-width: min(260px, 29vw); }
+  .figure--quad img { max-width: min(195px, 22vw); }
+  .figure--quad figcaption { max-width: 22ch; }
+
+  /* ---------- Diagrama de kernel / ventana ---------- */
+  .conv-line {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 2.4vw, 28px);
+    flex-wrap: wrap;
+    margin-top: clamp(24px, 3.4vw, 38px);
+  }
+  .conv-op {
+    font-family: var(--font-mono);
+    font-size: clamp(1.6rem, 2.9vw, 2.3rem);
+    color: var(--red);
+  }
+  .kernel {
+    display: grid;
+    grid-template-columns: repeat(var(--n, 3), minmax(44px, 66px));
+    gap: 4px;
+  }
+  .kernel__cell {
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--ink);
+    background: var(--paper-raised);
+    font-family: var(--font-mono);
+    font-size: clamp(15px, 1.9vw, 20px);
+    font-variant-numeric: tabular-nums;
+  }
+  .kernel__cell--center { background: var(--red-wash); border-color: var(--red); color: var(--red); }
+  .kernel__cell--hot { background: var(--red); border-color: var(--red); color: var(--red-ink); }
+  .kernel__cell--dim { color: var(--muted); }
+  .kernel__label {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 10px 0 0;
+  }
+  .conv-result {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.3rem, 4.4vw, 3.4rem);
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  /* Imagen como grilla, con una ventana 3x3 resaltada */
+  .imgrid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(34px, 52px));
+    gap: 3px;
+    margin-top: clamp(22px, 3vw, 32px);
+  }
+  .imgrid__px {
+    aspect-ratio: 1;
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    font-family: var(--font-mono);
+    font-size: clamp(12px, 1.4vw, 15px);
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+  }
+  .imgrid__px--win { border-color: var(--red); border-width: 2px; background: var(--red-wash); color: var(--red); }
+
+  /* ---------- Bloque de código ---------- */
+  .code {
+    font-family: var(--font-mono);
+    font-size: clamp(14px, 1.55vw, 17px);
+    line-height: 1.75;
+    background: var(--paper-raised);
+    border: 1px solid var(--ink);
+    padding: clamp(18px, 2.4vw, 28px);
+    max-width: 860px;
+    white-space: pre;
+    overflow-x: auto;
+    margin: clamp(22px, 3vw, 32px) 0 0;
+    tab-size: 4;
+  }
+  .code .cm { color: var(--muted); }
+  .code .fn { color: var(--red); }
+  .code .st { color: #1f6f43; }
+
+  /* ---------- Tabla comparativa ---------- */
+  .cmp {
+    width: 100%;
+    max-width: 1000px;
+    border-collapse: collapse;
+    margin-top: clamp(22px, 3vw, 32px);
+    font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+  }
+  .cmp th, .cmp td {
+    text-align: left;
+    padding: clamp(10px, 1.6vw, 16px) clamp(12px, 1.8vw, 18px);
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  .cmp thead th {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--red);
+    border-bottom: 2px solid var(--ink);
+  }
+  .cmp td:first-child { font-weight: 600; font-family: var(--font-display); }
+  .cmp code { color: var(--ink); background: var(--red-wash); padding: 1px 6px; }
+
+  /* ---------- Chrome ---------- */
+  .frame { position: fixed; inset: 0; pointer-events: none; z-index: 25; }
+  .frame__tick { position: absolute; width: 20px; height: 20px; }
+  .frame__tick--tl { top: 14px; left: 14px; border-top: 1.5px solid var(--muted); border-left: 1.5px solid var(--muted); }
+  .frame__tick--tr { top: 14px; right: 14px; border-top: 1.5px solid var(--muted); border-right: 1.5px solid var(--muted); }
+
+  .progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: var(--red);
+    width: 4%;
+    z-index: 30;
+    transition: width 0.25s ease;
+  }
+  @media (prefers-reduced-motion: reduce) { .progress { transition: none; } }
+
+  .counter {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    border: 1px solid var(--line);
+    padding: 4px 12px;
+    z-index: 30;
+  }
+
+  .brandmark {
+    position: fixed;
+    bottom: 20px;
+    left: var(--gutter);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    z-index: 30;
+    display: none;
+  }
+  .brandmark:hover { color: var(--red); }
+
+  .dots {
+    position: fixed;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 30;
+    max-height: 80vh;
+    overflow: hidden;
+  }
+  .dots__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1px solid var(--muted);
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .dots__dot.is-active { background: var(--red); border-color: var(--red); width: 9px; height: 9px; }
+  .dots__dot:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+  .controls { position: fixed; bottom: 20px; right: 24px; display: flex; gap: 8px; z-index: 30; }
+  .controls button {
+    width: 40px; height: 40px;
+    border: 1px solid var(--ink);
+    background: var(--paper-raised);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .controls button:hover { background: var(--ink); color: var(--paper); }
+  .controls button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  .controls button:disabled { opacity: 0.35; cursor: default; }
+  .controls button:disabled:hover { background: var(--paper-raised); color: var(--ink); }
+
+  @media (min-width: 720px) {
+    .brandmark { display: block; }
+  }
+  @media (max-width: 560px) {
+    .dots { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="frame" aria-hidden="true">
+  <span class="frame__tick frame__tick--tl"></span>
+  <span class="frame__tick frame__tick--tr"></span>
+</div>
+<div class="progress" id="progress"></div>
+<div class="counter" id="counter">01 / 36</div>
+<a class="brandmark" href="index.html">IoT Visión Artificial · Clase 2 — Convolución y filtros</a>
+<nav class="dots" id="dots" aria-label="Navegación de diapositivas"></nav>
+<div class="controls">
+  <button type="button" id="prevBtn" aria-label="Diapositiva anterior">‹</button>
+  <button type="button" id="nextBtn" aria-label="Siguiente diapositiva">›</button>
+</div>
+
+<main class="deck" id="deck">
+
+  <!-- 1 -->
+  <section class="slide slide--title" id="slide-1" data-title="Portada">
+    <p class="eyebrow">Unidad 02 · Clase 2</p>
+    <h1 class="title">Convolución y Filtros</h1>
+    <p class="subtitle">Prof. Eduardo Sierra · Universidad de La Guajira</p>
+    <p class="hint">Desliza o pulsa → para continuar</p>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide" id="slide-2" data-title="De la clase pasada">
+    <span class="section-index">De la clase pasada</span>
+    <p class="thesis">Una imagen es una <span class="thesis__accent">matriz de números</span>. Cada píxel tiene una posición y un valor entre 0 y 255.</p>
+    <p class="note">En la Clase 1 vimos qué es una imagen. Hoy vemos qué le hacemos a esa matriz de números. Y hoy usamos una sola operación para todo.</p>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide" id="slide-3" data-title="Objetivo">
+    <span class="section-index">Objetivo</span>
+    <p class="thesis thesis--sm">Primero, aritmética simple entre dos imágenes. Después, <span class="thesis__accent">todo lo demás es la misma operación con distinta matriz de pesos</span>.</p>
+    <ol class="agenda mt-lg">
+      <li><span class="agenda__num">01</span><span class="agenda__body"><span class="agenda__name">Aritmética de imágenes</span><span class="agenda__desc">Sumar, restar y mezclar dos imágenes, píxel a píxel</span></span></li>
+      <li><span class="agenda__num">02</span><span class="agenda__body"><span class="agenda__name">La operación — la convolución</span><span class="agenda__desc">Qué es un kernel y cómo cambia cada píxel usando sus vecinos</span></span></li>
+      <li><span class="agenda__num">03</span><span class="agenda__body"><span class="agenda__name">Filtros de suavizado</span><span class="agenda__desc">Promedio, gaussiano, mediana — quitar ruido y detalle</span></span></li>
+      <li><span class="agenda__num">04</span><span class="agenda__body"><span class="agenda__name">Filtros de bordes</span><span class="agenda__desc">Sobel, Laplaciano y Canny — encontrar dónde cambia la imagen</span></span></li>
+    </ol>
+  </section>
+
+  <!-- ===== ACTO 1 — ARITMÉTICA DE IMÁGENES ===== -->
+
+  <!-- 4 -->
+  <section class="slide" id="slide-4" data-title="Sumar">
+    <span class="section-index">Acto 1 · Aritmética de imágenes</span>
+    <p class="hero-word">SUMAR<span class="accent">.</span></p>
+    <p class="hero-sub">Antes de vecindarios y kernels, lo más simple: un píxel es un número, y los números se pueden sumar.</p>
+  </section>
+
+  <!-- 5 -->
+  <section class="slide" id="slide-5" data-title="Sumar dos imágenes">
+    <span class="section-index">Acto 1 · Aritmética de imágenes</span>
+    <h2 class="slide-title">Sumar dos imágenes, píxel a píxel</h2>
+    <div class="conv-line">
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell">30</span><span class="kernel__cell">60</span><span class="kernel__cell">90</span>
+          <span class="kernel__cell">100</span><span class="kernel__cell kernel__cell--center">150</span><span class="kernel__cell">200</span>
+          <span class="kernel__cell">10</span><span class="kernel__cell">40</span><span class="kernel__cell">70</span>
+        </div>
+        <p class="kernel__label">Imagen A</p>
+      </div>
+      <span class="conv-op">+</span>
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell kernel__cell--dim">10</span><span class="kernel__cell kernel__cell--dim">10</span><span class="kernel__cell kernel__cell--dim">10</span>
+          <span class="kernel__cell kernel__cell--dim">10</span><span class="kernel__cell kernel__cell--center">10</span><span class="kernel__cell kernel__cell--dim">10</span>
+          <span class="kernel__cell kernel__cell--dim">10</span><span class="kernel__cell kernel__cell--dim">10</span><span class="kernel__cell kernel__cell--dim">10</span>
+        </div>
+        <p class="kernel__label">Imagen B</p>
+      </div>
+      <span class="conv-op">=</span>
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell">40</span><span class="kernel__cell">70</span><span class="kernel__cell">100</span>
+          <span class="kernel__cell">110</span><span class="kernel__cell kernel__cell--center">160</span><span class="kernel__cell">210</span>
+          <span class="kernel__cell">20</span><span class="kernel__cell">50</span><span class="kernel__cell">80</span>
+        </div>
+        <p class="kernel__label">Resultado</p>
+      </div>
+    </div>
+    <p class="note">Dos imágenes del mismo tamaño: se suma el valor de cada píxel con el píxel que está en la misma posición de la otra imagen. Nada de vecinos — cada píxel solo mira a su pareja, en la otra imagen. (Ojo: esto es justo lo contrario de lo que viene después. Aquí un píxel combina con OTRA imagen, en la misma posición. En la convolución, un píxel combina con SUS VECINOS, en la MISMA imagen.)</p>
+    <div class="figure-row">
+      <figure class="figure figure--trio">
+        <img src="assets/img/escena-gris.png" alt="Imagen A: la escena original en escala de grises" width="480" height="300">
+        <figcaption>Imagen A — la escena</figcaption>
+      </figure>
+      <figure class="figure figure--trio">
+        <img src="assets/img/c2-capa.png" alt="Imagen B: una capa pareja de valor 80 en todo el cuadro" width="480" height="300">
+        <figcaption>Imagen B — capa pareja (+80)</figcaption>
+      </figure>
+      <figure class="figure figure--trio">
+        <img src="assets/img/c2-suma.png" alt="cv2.add de las dos imágenes: la escena se aclara, y el cielo ya claro se satura en blanco" width="480" height="300">
+        <figcaption>cv2.add(A, B) — nota el cielo saturado</figcaption>
+      </figure>
+    </div>
+    <p class="note">Con una imagen de verdad se nota algo que el ejemplo con números no muestra: donde la escena ya estaba clara (el cielo), sumar 80 la manda directo a 255 — el techo de la próxima diapositiva, ya en acción.</p>
+  </section>
+
+  <!-- 6 -->
+  <section class="slide" id="slide-6" data-title="El techo de 255">
+    <span class="section-index">Acto 1 · Aritmética de imágenes</span>
+    <h2 class="slide-title">El problema: el techo de 255</h2>
+    <div class="conv-line">
+      <span class="kernel__label" style="margin:0">200 + 100 = 300, pero un píxel no puede pasar de 255.</span>
+    </div>
+    <div class="conv-line">
+      <div>
+        <span class="conv-result">255</span>
+        <p class="kernel__label">cv2.add(a, b) → satura</p>
+      </div>
+      <span class="conv-op">≠</span>
+      <div>
+        <span class="conv-result" style="color:var(--red)">44</span>
+        <p class="kernel__label">a + b a mano (uint8) → da la vuelta</p>
+      </div>
+    </div>
+    <p class="note">OpenCV satura: nunca pasa de 255 ni baja de 0. Pero si sumas los arrays de NumPy directamente, sin pasar por <code>cv2.add</code>, el tipo <code>uint8</code> "da la vuelta" — 300 se convierte en 44 (300 mod 256). Un píxel que debía verse blanco y brillante, se ve oscuro. Por eso: siempre <code>cv2.add</code>, nunca <code>arr1 + arr2</code> a mano.</p>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide" id="slide-7" data-title="Resta y diferencia">
+    <span class="section-index">Acto 1 · Aritmética de imágenes</span>
+    <h2 class="slide-title">Resta y diferencia: ¿qué cambió?</h2>
+    <div class="figure-row">
+      <figure class="figure figure--trio">
+        <img src="assets/img/escena-gris.png" alt="Cuadro 1: la escena original" width="480" height="300">
+        <figcaption>Cuadro 1</figcaption>
+      </figure>
+      <figure class="figure figure--trio">
+        <img src="assets/img/c2-cuadro2.png" alt="Cuadro 2: la misma escena con un objeto nuevo dibujado encima" width="480" height="300">
+        <figcaption>Cuadro 2 — algo nuevo apareció</figcaption>
+      </figure>
+      <figure class="figure figure--trio">
+        <img src="assets/img/c2-diferencia.png" alt="cv2.absdiff entre los dos cuadros: solo se ve la forma que cambió" width="480" height="300">
+        <figcaption>cv2.absdiff — aquí cambió algo</figcaption>
+      </figure>
+    </div>
+    <p class="note"><code>cv2.subtract(a, b)</code> también satura (nunca da negativo). <code>cv2.absdiff(a, b)</code> da directo el valor absoluto de la diferencia, sin importar cuál imagen es más clara. Comparar dos cuadros seguidos de una cámara IoT así es la forma más simple de detectar movimiento.</p>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide" id="slide-8" data-title="Blend">
+    <span class="section-index">Acto 1 · Aritmética de imágenes</span>
+    <h2 class="slide-title">Mezclar dos imágenes, con pesos</h2>
+    <div class="conv-line">
+      <span class="kernel__label" style="margin:0">resultado = α·A + β·B + γ</span>
+    </div>
+    <div class="conv-line">
+      <span class="kernel__label" style="margin:0">0.7 × 200 + 0.3 × 50 + 0 =</span>
+      <span class="conv-result">155</span>
+    </div>
+    <p class="note">Sirve para mezclas suaves: una transición entre dos imágenes, una marca de agua semitransparente, un mapa de calor superpuesto sobre una foto. α y β no tienen que sumar 1 — pero si suman 1, el brillo total de la imagen se mantiene parecido.</p>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide" id="slide-9" data-title="Logaritmo">
+    <span class="section-index">Acto 1 · Aritmética de imágenes</span>
+    <h2 class="slide-title">Aclarar sombras: la transformación logarítmica</h2>
+    <div class="conv-line">
+      <span class="kernel__label" style="margin:0">s = c · log(1 + r)</span>
+      <span class="kernel__label" style="margin:0">·&nbsp; 5 → 82&nbsp; ·&nbsp; 200 → 244</span>
+    </div>
+    <div class="figure-row">
+      <figure class="figure figure--pair">
+        <img src="assets/img/escena-gris.png" alt="Escena original en escala de grises" width="480" height="300">
+        <figcaption>Original</figcaption>
+      </figure>
+      <figure class="figure figure--pair">
+        <img src="assets/img/c2-log.png" alt="La misma escena tras la transformación logarítmica: las sombras se aclaran" width="480" height="300">
+        <figcaption>Transformación logarítmica</figcaption>
+      </figure>
+    </div>
+    <p class="note">Sumar y restar cambian el brillo parejo: le suman lo mismo a un píxel oscuro que a uno claro. El logaritmo no — crece rápido al principio y se aplana después, así que separa mejor los tonos oscuros (5 → 82, un salto enorme) y casi no toca los tonos claros (200 → 244). Sirve para "sacar" detalle de una foto subexpuesta, como la de una cámara IoT filmando de noche.</p>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide" id="slide-10" data-title="Gamma">
+    <span class="section-index">Acto 1 · Aritmética de imágenes</span>
+    <h2 class="slide-title">Aclarar u oscurecer: la corrección gamma</h2>
+    <div class="conv-line">
+      <span class="kernel__label" style="margin:0">s = (r / 255)^γ × 255</span>
+      <span class="kernel__label" style="margin:0">·&nbsp; píxel 50: γ=0.4 → 133&nbsp; ·&nbsp; γ=2.5 → 4</span>
+    </div>
+    <div class="figure-row">
+      <figure class="figure figure--trio">
+        <img src="assets/img/c2-gamma-claro.png" alt="Escena con gamma 0.4: se aclara, sobre todo las sombras" width="480" height="300">
+        <figcaption>γ = 0.4 (aclara)</figcaption>
+      </figure>
+      <figure class="figure figure--trio">
+        <img src="assets/img/escena-gris.png" alt="Escena original, sin corrección gamma" width="480" height="300">
+        <figcaption>original (γ = 1)</figcaption>
+      </figure>
+      <figure class="figure figure--trio">
+        <img src="assets/img/c2-gamma-oscuro.png" alt="Escena con gamma 2.5: se oscurece, sobre todo las luces altas" width="480" height="300">
+        <figcaption>γ = 2.5 (oscurece)</figcaption>
+      </figure>
+    </div>
+    <p class="note">γ menor que 1: aclara, sobre todo las sombras. γ mayor que 1: oscurece, sobre todo las luces altas. γ = 1 no cambia nada. Es la misma idea del logaritmo, pero ajustable con un solo número — y es la curva que usan cámaras y pantallas para corregir cómo el ojo humano percibe el brillo (no es lineal).</p>
+  </section>
+
+  <!-- 11 -->
+  <section class="slide" id="slide-11" data-title="OpenCV: aritmética">
+    <span class="section-index">Acto 1 · Aritmética de imágenes</span>
+    <h2 class="slide-title">En OpenCV: aritmética de imágenes</h2>
+    <div class="code">import cv2
+import numpy as np
+
+a = cv2.imread(<span class="st">"cuadro1.png"</span>, cv2.IMREAD_GRAYSCALE)
+b = cv2.imread(<span class="st">"cuadro2.png"</span>, cv2.IMREAD_GRAYSCALE)
+
+<span class="cm"># suma con saturación: nunca pasa de 255</span>
+suma = cv2.<span class="fn">add</span>(a, b)
+
+<span class="cm"># resta con saturación: nunca baja de 0</span>
+resta = cv2.<span class="fn">subtract</span>(a, b)
+
+<span class="cm"># diferencia absoluta |a - b|, sin importar cuál es mayor</span>
+diferencia = cv2.<span class="fn">absdiff</span>(a, b)
+
+<span class="cm"># mezcla ponderada: 0.7*a + 0.3*b + 0</span>
+mezcla = cv2.<span class="fn">addWeighted</span>(a, 0.7, b, 0.3, 0)
+
+<span class="cm"># logaritmo: aclara sombras (c ajusta para que 255 siga dando ~255)</span>
+c = 255 / np.log(1 + 255)
+log_img = np.uint8(c * np.log(1 + a.astype(np.float64)))
+
+<span class="cm"># gamma: menor que 1 aclara, mayor que 1 oscurece</span>
+gamma = 0.4
+gamma_img = np.uint8(((a / 255.0) ** gamma) * 255)</div>
+    <p class="note">Las cuatro primeras reciben dos imágenes del mismo tamaño y tipo de dato — si no coinciden, OpenCV lanza un error. Log y gamma trabajan sobre una sola imagen, en punto flotante — por eso el paso extra de convertir con <code>.astype(np.float64)</code> y volver a <code>uint8</code> al final. Con esto ya podemos combinar imágenes completas, y aclarar u oscurecer a propósito. Ahora, a combinar un píxel con sus propios vecinos.</p>
+  </section>
+
+  <!-- ===== ACTO 2 — LA CONVOLUCIÓN ===== -->
+
+  <!-- 12 -->
+  <section class="slide" id="slide-12" data-title="Vecindario">
+    <span class="section-index">Acto 2 · La operación</span>
+    <p class="hero-word">VECINDARIO<span class="accent">.</span></p>
+    <p class="hero-sub">Ya sumamos y restamos imágenes completas, número contra número. Ahora algo distinto: un píxel solo casi no dice nada — lo importante es compararlo con sus vecinos, dentro de la misma imagen.</p>
+  </section>
+
+  <!-- 13 -->
+  <section class="slide" id="slide-13" data-title="Qué es una convolución">
+    <span class="section-index">Acto 2 · La operación</span>
+    <h2 class="slide-title">Qué es una convolución</h2>
+    <p class="thesis thesis--sm">Recorrer la imagen píxel por píxel. En cada uno, <span class="thesis__accent">cambiar su valor combinándolo con sus vecinos</span>.</p>
+    <p class="note">Esa combinación usa una matriz pequeña de números: el kernel (también llamado máscara o filtro). Cambiar el kernel cambia el efecto. Eso es lo único distinto entre un blur y un detector de bordes.</p>
+  </section>
+
+  <!-- 14 -->
+  <section class="slide" id="slide-14" data-title="El kernel">
+    <span class="section-index">Acto 2 · La operación</span>
+    <h2 class="slide-title">El kernel: una matriz de pesos</h2>
+    <div class="conv-line">
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell kernel__cell--dim">0</span><span class="kernel__cell kernel__cell--dim">−1</span><span class="kernel__cell kernel__cell--dim">0</span>
+          <span class="kernel__cell kernel__cell--dim">−1</span><span class="kernel__cell kernel__cell--center">5</span><span class="kernel__cell kernel__cell--dim">−1</span>
+          <span class="kernel__cell kernel__cell--dim">0</span><span class="kernel__cell kernel__cell--dim">−1</span><span class="kernel__cell kernel__cell--dim">0</span>
+        </div>
+        <p class="kernel__label">Kernel 3 × 3 · realce (sharpen)</p>
+      </div>
+    </div>
+    <p class="note">Casi siempre mide 3×3, 5×5 o 7×7 — un número impar, para tener un centro claro. El centro (rojo) es el peso del propio píxel. Los demás números son el peso de cada vecino.</p>
+  </section>
+
+  <!-- 15 -->
+  <section class="slide" id="slide-15" data-title="La operación paso a paso">
+    <span class="section-index">Acto 2 · La operación</span>
+    <h2 class="slide-title">En cada píxel: alinear, multiplicar, sumar</h2>
+    <div class="imgrid" aria-hidden="true">
+      <span class="imgrid__px">72</span><span class="imgrid__px">70</span><span class="imgrid__px">71</span><span class="imgrid__px">70</span><span class="imgrid__px">69</span><span class="imgrid__px">70</span><span class="imgrid__px">71</span>
+      <span class="imgrid__px">71</span><span class="imgrid__px imgrid__px--win">70</span><span class="imgrid__px imgrid__px--win">72</span><span class="imgrid__px imgrid__px--win">71</span><span class="imgrid__px">70</span><span class="imgrid__px">69</span><span class="imgrid__px">70</span>
+      <span class="imgrid__px">70</span><span class="imgrid__px imgrid__px--win">71</span><span class="imgrid__px imgrid__px--win">70</span><span class="imgrid__px imgrid__px--win">72</span><span class="imgrid__px">71</span><span class="imgrid__px">70</span><span class="imgrid__px">71</span>
+      <span class="imgrid__px">69</span><span class="imgrid__px imgrid__px--win">70</span><span class="imgrid__px imgrid__px--win">69</span><span class="imgrid__px imgrid__px--win">70</span><span class="imgrid__px">72</span><span class="imgrid__px">71</span><span class="imgrid__px">70</span>
+      <span class="imgrid__px">70</span><span class="imgrid__px">71</span><span class="imgrid__px">70</span><span class="imgrid__px">69</span><span class="imgrid__px">70</span><span class="imgrid__px">71</span><span class="imgrid__px">72</span>
+    </div>
+    <p class="note">La ventana roja se pone sobre un píxel. Cada valor se multiplica por el peso del kernel en esa posición. Se suman los 9 resultados: ese número es el nuevo valor del píxel del centro. Después la ventana se mueve un paso y se repite, hasta cubrir toda la imagen.</p>
+  </section>
+
+  <!-- 16 -->
+  <section class="slide" id="slide-16" data-title="Ejemplo numérico">
+    <span class="section-index">Acto 2 · La operación</span>
+    <h2 class="slide-title">Un ejemplo con números</h2>
+    <div class="conv-line">
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell">90</span><span class="kernel__cell">90</span><span class="kernel__cell">90</span>
+          <span class="kernel__cell">90</span><span class="kernel__cell kernel__cell--center">90</span><span class="kernel__cell">90</span>
+          <span class="kernel__cell">10</span><span class="kernel__cell">10</span><span class="kernel__cell">10</span>
+        </div>
+        <p class="kernel__label">Vecindario (píxeles)</p>
+      </div>
+      <span class="conv-op">⊛</span>
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell kernel__cell--dim">−1</span><span class="kernel__cell kernel__cell--dim">−2</span><span class="kernel__cell kernel__cell--dim">−1</span>
+          <span class="kernel__cell kernel__cell--dim">0</span><span class="kernel__cell kernel__cell--center">0</span><span class="kernel__cell kernel__cell--dim">0</span>
+          <span class="kernel__cell kernel__cell--dim">1</span><span class="kernel__cell kernel__cell--dim">2</span><span class="kernel__cell kernel__cell--dim">1</span>
+        </div>
+        <p class="kernel__label">Kernel (Sobel vertical)</p>
+      </div>
+      <span class="conv-op">=</span>
+      <span class="conv-result">−320</span>
+    </div>
+    <p class="note">La cuenta: 40 − 360 = −320. Un número grande significa un cambio brusco: aquí hay un borde horizontal. Si todos los píxeles fueran parecidos, el resultado daría casi 0.</p>
+  </section>
+
+  <!-- 17 -->
+  <section class="slide" id="slide-17" data-title="Los bordes de la imagen">
+    <span class="section-index">Acto 2 · La operación</span>
+    <h2 class="slide-title">¿Y en el borde de la imagen?</h2>
+    <p class="thesis thesis--sm">En los bordes de la imagen, la ventana 3×3 <span class="thesis__accent">no cabe completa</span>. Hay que inventar los píxeles que faltan.</p>
+    <ol class="agenda mt-md">
+      <li><span class="agenda__num">01</span><span class="agenda__body"><span class="agenda__name">Reflejar el borde</span><span class="agenda__desc">Copiar los píxeles de adentro, como en un espejo. Es lo que usa OpenCV por defecto</span></span></li>
+      <li><span class="agenda__num">02</span><span class="agenda__body"><span class="agenda__name">Repetir el último píxel</span><span class="agenda__desc">Estirar el valor del borde hacia afuera</span></span></li>
+      <li><span class="agenda__num">03</span><span class="agenda__body"><span class="agenda__name">Rellenar con cero</span><span class="agenda__desc">Fácil, pero deja un borde oscuro que no es real</span></span></li>
+    </ol>
+  </section>
+
+  <!-- 18 -->
+  <section class="slide" id="slide-18" data-title="OpenCV: filter2D">
+    <span class="section-index">Acto 2 · La operación</span>
+    <h2 class="slide-title">En OpenCV: <code>cv2.filter2D</code></h2>
+    <div class="code"><span class="cm"># Aplicar CUALQUIER kernel a una imagen</span>
+import cv2
+import numpy as np
+
+img = cv2.imread(<span class="st">"escena.png"</span>, cv2.IMREAD_GRAYSCALE)
+
+<span class="cm"># kernel de realce: resalta el centro, resta los vecinos</span>
+kernel = np.array([[ 0, -1,  0],
+                   [-1,  5, -1],
+                   [ 0, -1,  0]], dtype=np.float32)
+
+<span class="cm"># ddepth = -1  -> la salida tiene la misma profundidad que la entrada</span>
+salida = cv2.<span class="fn">filter2D</span>(img, -1, kernel)
+
+cv2.<span class="fn">imwrite</span>(<span class="st">"escena-realce.png"</span>, salida)</div>
+    <p class="note">Todos los filtros de hoy son casos de esta misma función. OpenCV también trae funciones ya hechas —más rápidas— para los filtros más comunes.</p>
+  </section>
+
+  <!-- 19 -->
+  <section class="slide" id="slide-19" data-title="filter2D — resultado">
+    <span class="section-index">Acto 2 · La operación</span>
+    <h2 class="slide-title">El realce, aplicado</h2>
+    <div class="conv-line">
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell">90</span><span class="kernel__cell">90</span><span class="kernel__cell">90</span>
+          <span class="kernel__cell">90</span><span class="kernel__cell kernel__cell--center">90</span><span class="kernel__cell">90</span>
+          <span class="kernel__cell">10</span><span class="kernel__cell">10</span><span class="kernel__cell">10</span>
+        </div>
+        <p class="kernel__label">El mismo vecindario de la diapositiva 16</p>
+      </div>
+      <span class="conv-op">⊛</span>
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell kernel__cell--dim">0</span><span class="kernel__cell kernel__cell--dim">−1</span><span class="kernel__cell kernel__cell--dim">0</span>
+          <span class="kernel__cell kernel__cell--dim">−1</span><span class="kernel__cell kernel__cell--center">5</span><span class="kernel__cell kernel__cell--dim">−1</span>
+          <span class="kernel__cell kernel__cell--dim">0</span><span class="kernel__cell kernel__cell--dim">−1</span><span class="kernel__cell kernel__cell--dim">0</span>
+        </div>
+        <p class="kernel__label">Kernel de realce</p>
+      </div>
+      <span class="conv-op">=</span>
+      <span class="conv-result">170</span>
+    </div>
+    <div class="figure-row">
+      <figure class="figure figure--pair">
+        <img src="assets/img/escena-gris.png" alt="Escena original en escala de grises" width="480" height="300">
+        <figcaption>Original (gris)</figcaption>
+      </figure>
+      <figure class="figure figure--pair">
+        <img src="assets/img/c2-sharpen.png" alt="Escena tras aplicar el kernel de realce con filter2D" width="480" height="300">
+        <figcaption>filter2D · kernel de realce</figcaption>
+      </figure>
+    </div>
+    <p class="note">Con Sobel, este mismo vecindario daba −320 (el borde). Con realce da 170, casi el doble del valor original (90): el filtro exagera el salto que ya estaba ahí. La suma de los pesos es 1, así que el brillo general de la imagen no cambia.</p>
+  </section>
+
+  <!-- ===== ACTO 3 — SUAVIZADO ===== -->
+
+  <!-- 20 -->
+  <section class="slide" id="slide-20" data-title="Suavizar">
+    <span class="section-index">Acto 3 · Suavizado</span>
+    <p class="hero-word">SUAVIZAR<span class="accent">.</span></p>
+    <p class="hero-sub">A veces la imagen no llega limpia. Antes de buscar bordes, hay que arreglar eso.</p>
+  </section>
+
+  <!-- 21 -->
+  <section class="slide" id="slide-21" data-title="Qué es el ruido">
+    <span class="section-index">Acto 3 · Suavizado</span>
+    <h2 class="slide-title">Qué es el ruido</h2>
+    <div class="figure-row">
+      <div>
+        <div class="imgrid" style="grid-template-columns:repeat(5, minmax(34px, 52px))">
+          <span class="imgrid__px">200</span><span class="imgrid__px">200</span><span class="imgrid__px">200</span><span class="imgrid__px">200</span><span class="imgrid__px">200</span>
+          <span class="imgrid__px">200</span><span class="imgrid__px">200</span><span class="imgrid__px">200</span><span class="imgrid__px">200</span><span class="imgrid__px">200</span>
+          <span class="imgrid__px">200</span><span class="imgrid__px">200</span><span class="imgrid__px">200</span><span class="imgrid__px">200</span><span class="imgrid__px">200</span>
+        </div>
+        <p class="kernel__label">Lo que debería leer el sensor</p>
+      </div>
+      <div>
+        <div class="imgrid" style="grid-template-columns:repeat(5, minmax(34px, 52px))">
+          <span class="imgrid__px">198</span><span class="imgrid__px">203</span><span class="imgrid__px">197</span><span class="imgrid__px imgrid__px--win">255</span><span class="imgrid__px">201</span>
+          <span class="imgrid__px imgrid__px--win">0</span><span class="imgrid__px">199</span><span class="imgrid__px">202</span><span class="imgrid__px">198</span><span class="imgrid__px">204</span>
+          <span class="imgrid__px">196</span><span class="imgrid__px">201</span><span class="imgrid__px">199</span><span class="imgrid__px">203</span><span class="imgrid__px imgrid__px--win">0</span>
+        </div>
+        <p class="kernel__label">Lo que en realidad lee</p>
+      </div>
+    </div>
+    <p class="note">Esta zona de la imagen es pareja: todos los píxeles deberían valer lo mismo, 200. Pero el sensor no es perfecto — lee valores parecidos, no iguales. Y a veces uno se dispara a 0 o a 255 (en rojo). Eso, junto, es el ruido.</p>
+  </section>
+
+  <!-- 22 -->
+  <section class="slide" id="slide-22" data-title="Qué produce el ruido">
+    <span class="section-index">Acto 3 · Suavizado</span>
+    <h2 class="slide-title">¿Qué lo produce?</h2>
+    <ol class="agenda">
+      <li><span class="agenda__num">01</span><span class="agenda__body"><span class="agenda__name">Poca luz</span><span class="agenda__desc">El sensor amplifica la señal (ISO alto) — y junto con ella, el error</span></span></li>
+      <li><span class="agenda__num">02</span><span class="agenda__body"><span class="agenda__name">Sensor barato</span><span class="agenda__desc">Cada punto del sensor no responde exactamente igual que sus vecinos</span></span></li>
+      <li><span class="agenda__num">03</span><span class="agenda__body"><span class="agenda__name">Transmisión o compresión</span><span class="agenda__desc">Un dato que se pierde en el camino se convierte en un píxel a 0 o a 255 — el "sal y pimienta"</span></span></li>
+    </ol>
+    <p class="note">Es información falsa, mezclada con la real. No podemos evitarla en el sensor — pero sí podemos quitarla de la imagen. De eso trata el resto de este acto.</p>
+  </section>
+
+  <!-- 23 -->
+  <section class="slide" id="slide-23" data-title="Así se ve en una foto real">
+    <span class="section-index">Acto 3 · Suavizado</span>
+    <h2 class="slide-title">Así se ve en una foto real</h2>
+    <div class="figure-row">
+      <figure class="figure figure--hero">
+        <img src="assets/img/c2-ruido.png" alt="Escena en grises con ruido gaussiano y sal y pimienta" width="480" height="300">
+        <figcaption>Misma escena, con ruido del sensor</figcaption>
+      </figure>
+    </div>
+    <p class="note">El mismo ruido de la diapositiva anterior, pero sobre la foto completa. Si buscamos bordes directamente aquí, encontramos cientos de bordes falsos. Primero hay que suavizar.</p>
+  </section>
+
+  <!-- 24 -->
+  <section class="slide" id="slide-24" data-title="Kernel de promedio">
+    <span class="section-index">Acto 3 · Suavizado</span>
+    <h2 class="slide-title">Blur de caja (promedio)</h2>
+    <div class="conv-line">
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell">198</span><span class="kernel__cell">203</span><span class="kernel__cell">197</span>
+          <span class="kernel__cell">199</span><span class="kernel__cell kernel__cell--center">0</span><span class="kernel__cell">202</span>
+          <span class="kernel__cell">196</span><span class="kernel__cell">201</span><span class="kernel__cell">199</span>
+        </div>
+        <p class="kernel__label">Vecindario · el centro debería ser ≈200</p>
+      </div>
+      <span class="conv-op">⊛</span>
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell kernel__cell--dim">1</span><span class="kernel__cell kernel__cell--dim">1</span><span class="kernel__cell kernel__cell--dim">1</span>
+          <span class="kernel__cell kernel__cell--dim">1</span><span class="kernel__cell kernel__cell--center">1</span><span class="kernel__cell kernel__cell--dim">1</span>
+          <span class="kernel__cell kernel__cell--dim">1</span><span class="kernel__cell kernel__cell--dim">1</span><span class="kernel__cell kernel__cell--dim">1</span>
+        </div>
+        <p class="kernel__label">× 1/9 · todos pesan igual</p>
+      </div>
+      <span class="conv-op">=</span>
+      <span class="conv-result">177</span>
+    </div>
+    <p class="note">Ese 0 del centro es ruido: el sensor falló justo en ese píxel. El promedio de los 9 vecinos da 177 — mejor que 0, pero todavía lejos de 200. El error no desaparece, se reparte entre todos.</p>
+  </section>
+
+  <!-- 25 -->
+  <section class="slide" id="slide-25" data-title="Kernel gaussiano">
+    <span class="section-index">Acto 3 · Suavizado</span>
+    <h2 class="slide-title">Blur gaussiano</h2>
+    <div class="conv-line">
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell">198</span><span class="kernel__cell">203</span><span class="kernel__cell">197</span>
+          <span class="kernel__cell">199</span><span class="kernel__cell kernel__cell--center">0</span><span class="kernel__cell">202</span>
+          <span class="kernel__cell">196</span><span class="kernel__cell">201</span><span class="kernel__cell">199</span>
+        </div>
+        <p class="kernel__label">El mismo vecindario de antes</p>
+      </div>
+      <span class="conv-op">⊛</span>
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell kernel__cell--dim">1</span><span class="kernel__cell">2</span><span class="kernel__cell kernel__cell--dim">1</span>
+          <span class="kernel__cell">2</span><span class="kernel__cell kernel__cell--center">4</span><span class="kernel__cell">2</span>
+          <span class="kernel__cell kernel__cell--dim">1</span><span class="kernel__cell">2</span><span class="kernel__cell kernel__cell--dim">1</span>
+        </div>
+        <p class="kernel__label">× 1/16 · el centro pesa más que las esquinas</p>
+      </div>
+      <span class="conv-op">=</span>
+      <span class="conv-result">150</span>
+    </div>
+    <p class="note">Sorpresa: da peor que el promedio (150, no 177). El gaussiano le pone más peso justo al centro — y aquí el centro es el píxel dañado. Contra un ruido de punto suelto, pesar más el centro no ayuda: ayuda a suavizar de forma más natural cuando NO hay un punto dañado ahí.</p>
+  </section>
+
+  <!-- 26 -->
+  <section class="slide" id="slide-26" data-title="Suavizado — comparación">
+    <span class="section-index">Acto 3 · Suavizado</span>
+    <h2 class="slide-title">Los tres, sobre la imagen con ruido</h2>
+    <div class="figure-row">
+      <figure class="figure figure--quad">
+        <img src="assets/img/c2-ruido.png" alt="Escena con ruido, antes de suavizar" width="480" height="300">
+        <figcaption>Con ruido (antes)</figcaption>
+      </figure>
+      <figure class="figure figure--quad">
+        <img src="assets/img/c2-blur-box.png" alt="Imagen con ruido tras blur de promedio 9x9" width="480" height="300">
+        <figcaption>Promedio 9×9 · cv2.blur</figcaption>
+      </figure>
+      <figure class="figure figure--quad">
+        <img src="assets/img/c2-blur-gauss.png" alt="Imagen con ruido tras blur gaussiano" width="480" height="300">
+        <figcaption>Gaussiano · cv2.GaussianBlur</figcaption>
+      </figure>
+      <figure class="figure figure--quad">
+        <img src="assets/img/c2-blur-median.png" alt="Imagen con ruido tras filtro de mediana" width="480" height="300">
+        <figcaption>Mediana · cv2.medianBlur</figcaption>
+      </figure>
+    </div>
+    <div class="figure-row" style="gap:clamp(28px,4vw,52px)">
+      <div><span class="conv-result">177</span><p class="kernel__label">promedio</p></div>
+      <div><span class="conv-result">150</span><p class="kernel__label">gaussiano</p></div>
+      <div><span class="conv-result" style="color:var(--red)">199</span><p class="kernel__label">mediana — el valor real era ≈200</p></div>
+    </div>
+    <p class="note">Mira la primera imagen: es la que tiene ruido, antes de suavizar. Y mira los tres números de arriba, sobre nuestro vecindario con el 0 en el centro: la mediana no es una convolución, toma el valor del medio, no un promedio — por eso es la única que casi "adivina" el valor real. El promedio y el gaussiano solo diluyen el error entre los vecinos.</p>
+  </section>
+
+  <!-- 27 -->
+  <section class="slide" id="slide-27" data-title="OpenCV: suavizado">
+    <span class="section-index">Acto 3 · Suavizado</span>
+    <h2 class="slide-title">En OpenCV: suavizado</h2>
+    <div class="code">img = cv2.imread(<span class="st">"c2-ruido.png"</span>, cv2.IMREAD_GRAYSCALE)
+
+<span class="cm"># promedio: kernel de 9x9</span>
+box    = cv2.<span class="fn">blur</span>(img, (9, 9))
+
+<span class="cm"># gaussiano: kernel 9x9, sigma calculado por OpenCV si se pasa 0</span>
+gauss  = cv2.<span class="fn">GaussianBlur</span>(img, (9, 9), 0)
+
+<span class="cm"># mediana: tamaño impar; excelente contra sal y pimienta</span>
+median = cv2.<span class="fn">medianBlur</span>(img, 5)</div>
+    <p class="note">Regla práctica: usa GaussianBlur casi siempre. Usa la mediana solo si el ruido es de puntos sueltos. Casi nunca uses el promedio: el gaussiano da mejor resultado por el mismo costo.</p>
+  </section>
+
+  <!-- ===== ACTO 4 — BORDES ===== -->
+
+  <!-- 28 -->
+  <section class="slide" id="slide-28" data-title="Bordes">
+    <span class="section-index">Acto 4 · Bordes</span>
+    <p class="hero-word">BORDES<span class="accent">.</span></p>
+    <p class="hero-sub">Un borde es un lugar donde la imagen cambia de golpe. Encontrarlo es medir ese cambio.</p>
+  </section>
+
+  <!-- 29 -->
+  <section class="slide" id="slide-29" data-title="Borde = derivada">
+    <span class="section-index">Acto 4 · Bordes</span>
+    <h2 class="slide-title">Un borde es una derivada grande</h2>
+    <div class="conv-line">
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell kernel__cell--dim">−1</span><span class="kernel__cell kernel__cell--center">0</span><span class="kernel__cell kernel__cell--dim">1</span>
+        </div>
+        <p class="kernel__label">Kernel 1 × 3 · derivada en x</p>
+      </div>
+    </div>
+    <p class="note">Este kernel resta: píxel de la derecha menos píxel de la izquierda. En una zona plana, el resultado es 0. En un borde, el resultado es grande. Los detectores de bordes son, en el fondo, esta resta.</p>
+  </section>
+
+  <!-- 30 -->
+  <section class="slide" id="slide-30" data-title="Sobel">
+    <span class="section-index">Acto 4 · Bordes</span>
+    <h2 class="slide-title">Sobel: derivada en x y en y</h2>
+    <div class="conv-line">
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell kernel__cell--dim">−1</span><span class="kernel__cell kernel__cell--center">0</span><span class="kernel__cell kernel__cell--dim">1</span>
+          <span class="kernel__cell kernel__cell--dim">−2</span><span class="kernel__cell kernel__cell--center">0</span><span class="kernel__cell kernel__cell--dim">2</span>
+          <span class="kernel__cell kernel__cell--dim">−1</span><span class="kernel__cell kernel__cell--center">0</span><span class="kernel__cell kernel__cell--dim">1</span>
+        </div>
+        <p class="kernel__label">Sobel X · bordes verticales</p>
+      </div>
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell kernel__cell--dim">−1</span><span class="kernel__cell kernel__cell--dim">−2</span><span class="kernel__cell kernel__cell--dim">−1</span>
+          <span class="kernel__cell kernel__cell--center">0</span><span class="kernel__cell kernel__cell--center">0</span><span class="kernel__cell kernel__cell--center">0</span>
+          <span class="kernel__cell kernel__cell--dim">1</span><span class="kernel__cell kernel__cell--dim">2</span><span class="kernel__cell kernel__cell--dim">1</span>
+        </div>
+        <p class="kernel__label">Sobel Y · bordes horizontales</p>
+      </div>
+    </div>
+    <p class="note">Es la misma resta de antes, más un pequeño suavizado que la hace menos sensible al ruido. Sobel X encuentra bordes verticales. Sobel Y encuentra bordes horizontales. ¿Recuerdas el −320 de la diapositiva 16? Ese cálculo ya era exactamente esto: Sobel Y sobre un borde horizontal.</p>
+  </section>
+
+  <!-- 31 -->
+  <section class="slide" id="slide-31" data-title="Sobel — resultado">
+    <span class="section-index">Acto 4 · Bordes</span>
+    <h2 class="slide-title">Sobel X, Sobel Y y la magnitud</h2>
+    <div class="figure-row">
+      <figure class="figure figure--quad">
+        <img src="assets/img/escena-gris.png" alt="Escena original en escala de grises, antes de aplicar Sobel" width="480" height="300">
+        <figcaption>Original (antes)</figcaption>
+      </figure>
+      <figure class="figure figure--quad">
+        <img src="assets/img/c2-sobel-x.png" alt="Resultado de Sobel X: se ven los bordes con componente vertical" width="480" height="300">
+        <figcaption>|Sobel X|</figcaption>
+      </figure>
+      <figure class="figure figure--quad">
+        <img src="assets/img/c2-sobel-y.png" alt="Resultado de Sobel Y: se ve fuerte la línea del horizonte" width="480" height="300">
+        <figcaption>|Sobel Y| — nota el horizonte</figcaption>
+      </figure>
+      <figure class="figure figure--quad">
+        <img src="assets/img/c2-gradiente.png" alt="Magnitud del gradiente: combinación de Sobel X e Y" width="480" height="300">
+        <figcaption>Magnitud √(Gx² + Gy²)</figcaption>
+      </figure>
+    </div>
+    <p class="note">Al lado, la imagen original: así se ve antes de pasarla por Sobel. El horizonte casi no aparece en Sobel X, pero sí en Sobel Y. Si combinamos los dos, obtenemos los bordes en cualquier dirección.</p>
+  </section>
+
+  <!-- 32 -->
+  <section class="slide" id="slide-32" data-title="OpenCV: Sobel">
+    <span class="section-index">Acto 4 · Bordes</span>
+    <h2 class="slide-title">En OpenCV: <code>cv2.Sobel</code></h2>
+    <div class="code">img  = cv2.imread(<span class="st">"escena.png"</span>, cv2.IMREAD_GRAYSCALE)
+img  = cv2.<span class="fn">GaussianBlur</span>(img, (3, 3), 0)   <span class="cm"># siempre suavizar antes</span>
+
+<span class="cm"># CV_64F: permite valores negativos (un borde puede ir en los dos sentidos)</span>
+gx = cv2.<span class="fn">Sobel</span>(img, cv2.CV_64F, 1, 0, ksize=3)   <span class="cm"># derivada en x</span>
+gy = cv2.<span class="fn">Sobel</span>(img, cv2.CV_64F, 0, 1, ksize=3)   <span class="cm"># derivada en y</span>
+
+mag = cv2.<span class="fn">magnitude</span>(gx, gy)                <span class="cm"># √(gx² + gy²)</span>
+mag = cv2.<span class="fn">normalize</span>(mag, None, 0, 255, cv2.NORM_MINMAX)
+mag = mag.astype(<span class="st">"uint8"</span>)                   <span class="cm"># volver a 0..255 para verlo</span></div>
+    <p class="note">Si la salida es <code>CV_8U</code>, OpenCV recorta los negativos a 0 y se pierde la mitad de los bordes. Por eso usamos <code>CV_64F</code>, y normalizamos al final solo para poder verlo.</p>
+  </section>
+
+  <!-- 33 -->
+  <section class="slide" id="slide-33" data-title="Laplaciano">
+    <span class="section-index">Acto 4 · Bordes</span>
+    <h2 class="slide-title">Laplaciano: un solo kernel, todas las orientaciones</h2>
+    <div class="conv-line">
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell">90</span><span class="kernel__cell">90</span><span class="kernel__cell">90</span>
+          <span class="kernel__cell">90</span><span class="kernel__cell kernel__cell--center">90</span><span class="kernel__cell">90</span>
+          <span class="kernel__cell">10</span><span class="kernel__cell">10</span><span class="kernel__cell">10</span>
+        </div>
+        <p class="kernel__label">El mismo vecindario de la diapositiva 16</p>
+      </div>
+      <span class="conv-op">⊛</span>
+      <div>
+        <div class="kernel" style="--n:3">
+          <span class="kernel__cell kernel__cell--dim">0</span><span class="kernel__cell">1</span><span class="kernel__cell kernel__cell--dim">0</span>
+          <span class="kernel__cell">1</span><span class="kernel__cell kernel__cell--center">−4</span><span class="kernel__cell">1</span>
+          <span class="kernel__cell kernel__cell--dim">0</span><span class="kernel__cell">1</span><span class="kernel__cell kernel__cell--dim">0</span>
+        </div>
+        <p class="kernel__label">Kernel del Laplaciano</p>
+      </div>
+      <span class="conv-op">=</span>
+      <span class="conv-result">−80</span>
+    </div>
+    <div class="figure-row">
+      <figure class="figure figure--trio">
+        <img src="assets/img/c2-laplaciano.png" alt="Laplaciano con suavizado previo: bordes limpios" width="480" height="300">
+        <figcaption>Con GaussianBlur antes</figcaption>
+      </figure>
+      <figure class="figure figure--trio">
+        <img src="assets/img/c2-laplaciano-ruido.png" alt="Laplaciano sin suavizado sobre imagen con ruido: todo es ruido" width="480" height="300">
+        <figcaption>Sin suavizar, con ruido</figcaption>
+      </figure>
+    </div>
+    <p class="note">Con Sobel, este mismo vecindario daba −320 (diapositiva 16). Con Laplaciano da −80: sigue marcando el borde con un número grande, pero mide la curvatura, no la pendiente. El problema es ese −4 en el centro: si en vez de un borde hay ruido, ese peso tan grande lo amplifica — por eso casi siempre necesita GaussianBlur antes.</p>
+  </section>
+
+  <!-- 34 -->
+  <section class="slide" id="slide-34" data-title="Canny — pipeline">
+    <span class="section-index">Acto 4 · Bordes</span>
+    <h2 class="slide-title">Canny no es un kernel: es un pipeline</h2>
+    <ol class="agenda">
+      <li><span class="agenda__num">01</span><span class="agenda__body"><span class="agenda__name">Suavizar</span><span class="agenda__desc">GaussianBlur, para quitar el ruido</span></span></li>
+      <li><span class="agenda__num">02</span><span class="agenda__body"><span class="agenda__name">Gradiente</span><span class="agenda__desc">Sobel X e Y: cuánto y hacia dónde cambia cada píxel</span></span></li>
+      <li><span class="agenda__num">03</span><span class="agenda__body"><span class="agenda__name">Adelgazar</span><span class="agenda__desc">Dejar solo el píxel más fuerte de cada borde, para que quede una línea delgada</span></span></li>
+      <li><span class="agenda__num">04</span><span class="agenda__body"><span class="agenda__name">Histéresis (dos umbrales)</span><span class="agenda__desc">Es borde seguro si pasa el umbral alto. Un borde débil se guarda solo si toca a uno seguro</span></span></li>
+    </ol>
+    <div class="conv-line">
+      <span class="kernel__label" style="margin:0">Nuestro vecindario de la diapositiva 16:</span>
+      <span class="conv-result">320</span>
+      <span class="kernel__label" style="margin:0">&gt; umbral alto (160) → paso 04: borde seguro, sin dudar</span>
+    </div>
+    <p class="note">Por eso Canny da líneas finas y continuas, no un mapa de grises. Es el detector de bordes más usado.</p>
+  </section>
+
+  <!-- 35 -->
+  <section class="slide" id="slide-35" data-title="OpenCV: Canny">
+    <span class="section-index">Acto 4 · Bordes</span>
+    <h2 class="slide-title">En OpenCV: <code>cv2.Canny</code></h2>
+    <div class="code">img = cv2.imread(<span class="st">"escena.png"</span>, cv2.IMREAD_GRAYSCALE)
+img = cv2.<span class="fn">GaussianBlur</span>(img, (5, 5), 0)
+
+<span class="cm"># umbral_bajo, umbral_alto  (histéresis)</span>
+bordes = cv2.<span class="fn">Canny</span>(img, 80, 160)</div>
+    <div class="figure-row">
+      <figure class="figure figure--quad">
+        <img src="assets/img/escena-gris.png" alt="Escena original en escala de grises, antes de Canny" width="480" height="300">
+        <figcaption>Original (antes)</figcaption>
+      </figure>
+      <figure class="figure figure--quad">
+        <img src="assets/img/c2-canny-bajo.png" alt="Canny con umbrales bajos sobre imagen ruidosa: lleno de bordes falsos" width="480" height="300">
+        <figcaption>Umbrales bajos + ruido</figcaption>
+      </figure>
+      <figure class="figure figure--quad">
+        <img src="assets/img/c2-canny.png" alt="Canny bien ajustado: contornos limpios de la escena" width="480" height="300">
+        <figcaption>80 / 160 · equilibrado</figcaption>
+      </figure>
+      <figure class="figure figure--quad">
+        <img src="assets/img/c2-canny-alto.png" alt="Canny con umbrales altos: solo sobreviven los bordes de más contraste" width="480" height="300">
+        <figcaption>Umbrales altos</figcaption>
+      </figure>
+    </div>
+    <p class="note">Regla práctica: el umbral alto es 2 o 3 veces el bajo. ¿Muchos bordes falsos? Sube los umbrales. ¿Faltan bordes? Bájalos.</p>
+  </section>
+
+  <!-- 36 -->
+  <section class="slide" id="slide-36" data-title="Tabla resumen">
+    <span class="section-index">Resumen</span>
+    <h2 class="slide-title">Un filtro = un kernel = un efecto</h2>
+    <div style="overflow-x:auto">
+    <table class="cmp">
+      <thead>
+        <tr><th>Filtro</th><th>Qué hace el kernel</th><th>Efecto</th><th>OpenCV</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Promedio</td><td>Media del vecindario (pesos iguales)</td><td>Suaviza, quita detalle y ruido</td><td><code>cv2.blur</code></td></tr>
+        <tr><td>Gaussiano</td><td>Media ponderada por campana de Gauss</td><td>Suaviza natural; paso previo a bordes</td><td><code>cv2.GaussianBlur</code></td></tr>
+        <tr><td>Mediana</td><td>Valor mediano (no es convolución)</td><td>Elimina sal y pimienta</td><td><code>cv2.medianBlur</code></td></tr>
+        <tr><td>Realce</td><td>Centro positivo, vecinos negativos</td><td>Acentúa los bordes existentes</td><td><code>cv2.filter2D</code></td></tr>
+        <tr><td>Sobel</td><td>Primera derivada en x o en y</td><td>Fuerza y dirección de los bordes</td><td><code>cv2.Sobel</code></td></tr>
+        <tr><td>Laplaciano</td><td>Segunda derivada (todas direcciones)</td><td>Bordes finos; sensible al ruido</td><td><code>cv2.Laplacian</code></td></tr>
+        <tr><td>Canny</td><td>Pipeline: blur → Sobel → adelgazar → histéresis</td><td>Líneas de borde finas y continuas</td><td><code>cv2.Canny</code></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="note">El proceso típico: leer la imagen → pasar a grises → GaussianBlur → Canny → <code>cv2.findContours</code> para sacar las formas. Así empieza la etapa de "procesamiento" del pipeline AIoT de la Unidad 01.</p>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var deck = document.getElementById('deck');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var dotsWrap = document.getElementById('dots');
+  var counter = document.getElementById('counter');
+  var progress = document.getElementById('progress');
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var total = slides.length;
+  var current = 0;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  slides.forEach(function (slide, i) {
+    var dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'dots__dot';
+    dot.setAttribute('aria-label', 'Ir a: ' + (slide.dataset.title || ('Diapositiva ' + (i + 1))));
+    dot.addEventListener('click', function () { goTo(i); });
+    dotsWrap.appendChild(dot);
+  });
+  var dots = Array.prototype.slice.call(dotsWrap.children);
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function setActive(i) {
+    current = i;
+    dots.forEach(function (d, idx) { d.classList.toggle('is-active', idx === i); });
+    if (dots[i]) dots[i].setAttribute('aria-current', 'true');
+    dots.forEach(function (d, idx) { if (idx !== i) d.removeAttribute('aria-current'); });
+    counter.textContent = pad(i + 1) + ' / ' + pad(total);
+    progress.style.width = (((i + 1) / total) * 100) + '%';
+    prevBtn.disabled = i === 0;
+    nextBtn.disabled = i === total - 1;
+  }
+
+  function goTo(i) {
+    var target = Math.min(Math.max(i, 0), total - 1);
+    slides[target].scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+        setActive(slides.indexOf(entry.target));
+      }
+    });
+  }, { root: deck, threshold: [0.6] });
+  slides.forEach(function (s) { io.observe(s); });
+
+  document.addEventListener('keydown', function (e) {
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].indexOf(e.key) > -1) {
+      e.preventDefault();
+      goTo(current + 1);
+    } else if (['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) > -1) {
+      e.preventDefault();
+      goTo(current - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      goTo(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      goTo(total - 1);
+    }
+  });
+
+  prevBtn.addEventListener('click', function () { goTo(current - 1); });
+  nextBtn.addEventListener('click', function () { goTo(current + 1); });
+
+  setActive(0);
+})();
+</script>
+</body>
+</html>

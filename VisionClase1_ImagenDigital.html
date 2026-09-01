@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>IoT Visión Artificial — Clase 1: ¿Qué es una Imagen?</title>
+<meta name="description" content="Clase 1 — Unidad 02 · Visión por computador: qué es una imagen digital, cómo se crea el color, canales RGB y RGBA, y por qué el tamaño de un píxel no es fijo.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  /*
+    Mismo sistema visual del resto de la asignatura (ver index.html): deck
+    fijado en light mode a propósito, material para proyectar en clase.
+    Tipografías con fallback a system fonts por si el salón no tiene internet.
+
+    Esta clase usa texto grande a propósito: una idea por diapositiva,
+    pocas palabras, mucho espacio en blanco.
+  */
+  :root {
+    color-scheme: light;
+    --paper: #F2F4F5;
+    --paper-raised: #FFFFFF;
+    --ink: #121316;
+    --muted: #5B5F66;
+    --line: #D7DADD;
+    --red: #D6231D;
+    --red-ink: #FFFFFF;
+    --red-wash: #FBE9E8;
+
+    --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
+
+    --gutter: clamp(24px, 6vw, 96px);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    color-scheme: light;
+  }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  a { color: inherit; }
+  code { font-family: var(--font-mono); font-size: 0.85em; }
+
+  /* ---------- Deck mechanics ---------- */
+  .deck {
+    height: 100dvh;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .deck { scroll-behavior: auto; }
+  }
+
+  .slide {
+    min-height: 100dvh;
+    width: 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(72px, 10vh, 120px) var(--gutter);
+    position: relative;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: clamp(13px, 1.2vw, 15px);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin: 0 0 20px;
+  }
+
+  .section-index {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: clamp(13px, 1.2vw, 15px);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--red);
+    border: 1px solid var(--red);
+    border-radius: 999px;
+    padding: 6px 16px;
+    margin: 0 0 24px;
+  }
+
+  .slide-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.3rem, 5.2vw, 4rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 clamp(28px, 4vw, 48px);
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+
+  .mt-lg { margin-top: clamp(32px, 4.4vw, 52px); }
+  .mt-md { margin-top: clamp(20px, 2.8vw, 32px); }
+
+  .note {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    max-width: 66ch;
+    line-height: 1.6;
+    margin: clamp(22px, 3vw, 32px) 0 0;
+  }
+
+  /* ---------- Slide 1 — portada ---------- */
+  .slide--title .title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(2.6rem, 6.6vw, 5rem);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin: 0 0 clamp(24px, 3.6vw, 36px);
+    text-wrap: balance;
+    max-width: 16ch;
+  }
+  .subtitle {
+    font-family: var(--font-mono);
+    font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    margin: 0;
+  }
+
+  .hint {
+    position: absolute;
+    left: var(--gutter);
+    bottom: clamp(28px, 5vh, 48px);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---------- Palabra gigante (una idea, en grande) ---------- */
+  .hero-word {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(4.5rem, 15vw, 11rem);
+    letter-spacing: -0.03em;
+    line-height: 0.92;
+    color: var(--ink);
+    margin: 0;
+  }
+  .hero-word .accent { color: var(--red); }
+  .hero-sub {
+    font-family: var(--font-mono);
+    font-size: clamp(1rem, 1.6vw, 1.25rem);
+    color: var(--muted);
+    margin: clamp(10px, 1.6vw, 16px) 0 0;
+    letter-spacing: 0.02em;
+  }
+
+  /* ---------- Afirmaciones centrales (tesis), en grande ---------- */
+  .thesis {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 4.4vw, 3.2rem);
+    line-height: 1.18;
+    letter-spacing: -0.02em;
+    margin: 0;
+    max-width: 22ch;
+    text-wrap: balance;
+    color: var(--muted);
+  }
+  .thesis__accent { color: var(--ink); }
+  .thesis--sm { font-size: clamp(1.6rem, 3.2vw, 2.4rem); max-width: 30ch; }
+
+  /* ---------- Quad stats ---------- */
+  .quad-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(24px, 3.4vw, 40px);
+    max-width: 860px;
+    margin: 0 0 clamp(8px, 1vw, 12px);
+  }
+  .quad-stats--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (min-width: 700px) {
+    .quad-stats--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  .quad-stats--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 760px; }
+  .quad-stats__item { display: flex; flex-direction: column; gap: 8px; }
+  .quad-stats__figure {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    color: var(--red);
+  }
+  .quad-stats__label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---------- Agenda-style numbered list, en grande ---------- */
+  .agenda {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    max-width: 840px;
+  }
+  .agenda li {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(20px, 3vw, 40px);
+    padding: clamp(18px, 2.6vw, 26px) 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .agenda li:first-child { padding-top: 0; }
+  .agenda__num {
+    font-family: var(--font-mono);
+    font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+    color: var(--red);
+    flex-shrink: 0;
+    width: 2.4ch;
+  }
+  .agenda__body { display: flex; flex-direction: column; gap: 5px; }
+  .agenda__name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(1.2rem, 2.1vw, 1.55rem);
+    letter-spacing: -0.005em;
+  }
+  .agenda__desc {
+    font-size: clamp(0.95rem, 1.3vw, 1.1rem);
+    color: var(--muted);
+  }
+
+  /* ---------- Tarjetas planas ---------- */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(14px, 2vw, 22px);
+    max-width: 1080px;
+    margin: 0;
+  }
+  .card-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 900px; }
+  .paper-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    padding: clamp(20px, 2.4vw, 28px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .paper-card h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(1.15rem, 1.8vw, 1.4rem);
+    margin: 0;
+    letter-spacing: -0.005em;
+  }
+  .paper-card p {
+    font-size: clamp(0.95rem, 1.15vw, 1.05rem);
+    color: var(--muted);
+    margin: 0;
+  }
+  @media (max-width: 900px) {
+    .card-grid, .card-grid--2 { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Figuras (imágenes reales generadas para la clase) ---------- */
+  .figure-row {
+    display: flex;
+    gap: clamp(16px, 2.6vw, 32px);
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-top: clamp(22px, 3vw, 34px);
+  }
+  .figure { display: flex; flex-direction: column; gap: 10px; }
+  .figure img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--ink);
+    background: var(--paper-raised);
+  }
+  .figure figcaption {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .figure--hero img { max-width: min(600px, 100%); max-height: 46vh; width: auto; }
+  .figure--pair img { max-width: min(340px, 44vw); }
+  .figure--trio img { max-width: min(280px, 30vw); }
+
+  /* ---------- Diagrama de coordenadas ---------- */
+  .coord-box {
+    position: relative;
+    width: min(420px, 74vw);
+    height: clamp(180px, 28vh, 240px);
+    border: 1px solid var(--ink);
+    background: var(--paper-raised);
+    margin-top: clamp(22px, 3vw, 32px);
+  }
+  .coord-box__origin {
+    position: absolute; top: 10px; left: 12px;
+    font-family: var(--font-mono); font-size: 13px; color: var(--red); font-weight: 600;
+  }
+  .coord-box__x {
+    position: absolute; top: 10px; right: 14px;
+    font-family: var(--font-mono); font-size: 13px; color: var(--muted);
+  }
+  .coord-box__y {
+    position: absolute; bottom: 12px; left: 12px;
+    font-family: var(--font-mono); font-size: 13px; color: var(--muted);
+  }
+  .coord-box__pixel {
+    position: absolute; font-family: var(--font-mono); font-size: 13px; color: var(--ink);
+    background: var(--red-wash); border: 1px solid var(--red); padding: 4px 9px;
+  }
+
+  /* ---------- RGBA: fondo de cuadros para ver transparencia ---------- */
+  .rgba-stage {
+    width: min(280px, 40vw);
+    height: 213px;
+    border: 1px solid var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .rgba-stage img { width: 100%; height: 100%; object-fit: contain; background: transparent; border: none; }
+  .rgba-stage--checker {
+    background-image:
+      linear-gradient(45deg, #cfd3d6 25%, transparent 25%),
+      linear-gradient(-45deg, #cfd3d6 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #cfd3d6 75%),
+      linear-gradient(-45deg, transparent 75%, #cfd3d6 75%);
+    background-size: 22px 22px;
+    background-position: 0 0, 0 11px, 11px -11px, -11px 0px;
+    background-color: #fff;
+  }
+  .rgba-stage--dark { background-color: var(--ink); }
+  .rgba-stage--photo {
+    background-image: url("assets/img/escena.png");
+    background-size: cover;
+    background-position: center;
+  }
+
+  /* ---------- Chrome: frame, progress, counter, dots, controls ---------- */
+  .frame { position: fixed; inset: 0; pointer-events: none; z-index: 25; }
+  .frame__tick { position: absolute; width: 20px; height: 20px; }
+  .frame__tick--tl { top: 14px; left: 14px; border-top: 1.5px solid var(--muted); border-left: 1.5px solid var(--muted); }
+  .frame__tick--tr { top: 14px; right: 14px; border-top: 1.5px solid var(--muted); border-right: 1.5px solid var(--muted); }
+
+  .progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: var(--red);
+    width: 5%;
+    z-index: 30;
+    transition: width 0.25s ease;
+  }
+  @media (prefers-reduced-motion: reduce) { .progress { transition: none; } }
+
+  .counter {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    border: 1px solid var(--line);
+    padding: 4px 12px;
+    z-index: 30;
+  }
+
+  .brandmark {
+    position: fixed;
+    bottom: 20px;
+    left: var(--gutter);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    z-index: 30;
+    display: none;
+  }
+  .brandmark:hover { color: var(--red); }
+
+  .dots {
+    position: fixed;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 30;
+    max-height: 80vh;
+    overflow: hidden;
+  }
+  .dots__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1px solid var(--muted);
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .dots__dot.is-active { background: var(--red); border-color: var(--red); width: 9px; height: 9px; }
+  .dots__dot:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+  .controls { position: fixed; bottom: 20px; right: 24px; display: flex; gap: 8px; z-index: 30; }
+  .controls button {
+    width: 40px; height: 40px;
+    border: 1px solid var(--ink);
+    background: var(--paper-raised);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .controls button:hover { background: var(--ink); color: var(--paper); }
+  .controls button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  .controls button:disabled { opacity: 0.35; cursor: default; }
+  .controls button:disabled:hover { background: var(--paper-raised); color: var(--ink); }
+
+  @media (min-width: 720px) {
+    .brandmark { display: block; }
+  }
+  @media (max-width: 560px) {
+    .dots { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="frame" aria-hidden="true">
+  <span class="frame__tick frame__tick--tl"></span>
+  <span class="frame__tick frame__tick--tr"></span>
+</div>
+<div class="progress" id="progress"></div>
+<div class="counter" id="counter">01 / 22</div>
+<a class="brandmark" href="index.html">IoT Visión Artificial · Clase 1 — ¿Qué es una imagen?</a>
+<nav class="dots" id="dots" aria-label="Navegación de diapositivas"></nav>
+<div class="controls">
+  <button type="button" id="prevBtn" aria-label="Diapositiva anterior">‹</button>
+  <button type="button" id="nextBtn" aria-label="Siguiente diapositiva">›</button>
+</div>
+
+<main class="deck" id="deck">
+
+  <!-- 1 -->
+  <section class="slide slide--title" id="slide-1" data-title="Portada">
+    <p class="eyebrow">Unidad 02 · Clase 1</p>
+    <h1 class="title">¿Qué es una Imagen?</h1>
+    <p class="subtitle">Prof. Eduardo Sierra · Universidad de La Guajira</p>
+    <p class="hint">Desliza o pulsa → para continuar</p>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide" id="slide-2" data-title="Objetivo">
+    <span class="section-index">Objetivo</span>
+    <p class="thesis">Vamos a construir esto <span class="thesis__accent">en el mismo orden en que ocurre en la realidad:</span> primero se captura la luz, después esa luz significa algo, y al final se vuelve a mostrar.</p>
+    <ol class="agenda mt-lg">
+      <li><span class="agenda__num">01</span><span class="agenda__body"><span class="agenda__name">Acto 1 — Captura</span><span class="agenda__desc">Cómo una cámara convierte luz en una matriz de números (todavía sin color)</span></span></li>
+      <li><span class="agenda__num">02</span><span class="agenda__body"><span class="agenda__name">Acto 2 — Significado</span><span class="agenda__desc">Qué son esos números: RGB y RGBA</span></span></li>
+      <li><span class="agenda__num">03</span><span class="agenda__body"><span class="agenda__name">Acto 3 — Pantalla</span><span class="agenda__desc">Cómo esa matriz vuelve a convertirse en luz que puedes ver</span></span></li>
+    </ol>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide" id="slide-3" data-title="Nuestra imagen de ejemplo">
+    <span class="section-index">Antes de empezar</span>
+    <h2 class="slide-title">Nuestra imagen de ejemplo</h2>
+    <div class="figure-row">
+      <figure class="figure figure--hero">
+        <img src="assets/img/escena.png" alt="Escena sintética: cielo, sol, nubes, dos montañas y suelo" width="480" height="300">
+        <figcaption>escena.png · 480 × 300 píxeles</figcaption>
+      </figure>
+    </div>
+    <p class="note">Vamos a usar esta misma imagen durante toda la clase — y a partir de la próxima diapositiva, vamos a olvidarnos de que tiene color.</p>
+  </section>
+
+  <!-- ===== ACTO 1 — CAPTURA ===== -->
+
+  <!-- 4 -->
+  <section class="slide" id="slide-4" data-title="Una imagen es una matriz">
+    <span class="section-index">Acto 1 · Captura</span>
+    <p class="hero-word">MATRIZ<span class="accent">.</span></p>
+    <p class="hero-sub">Antes del color: para una computadora, una imagen es ante todo una matriz de números.</p>
+  </section>
+
+  <!-- 5 -->
+  <section class="slide" id="slide-5" data-title="La imagen como función">
+    <span class="section-index">Acto 1 · Captura</span>
+    <h2 class="slide-title">Cada punto tiene una posición</h2>
+    <div class="coord-box mt-lg">
+      <span class="coord-box__origin">(0, 0)</span>
+      <span class="coord-box__x">x →</span>
+      <span class="coord-box__y">y ↓</span>
+      <span class="coord-box__pixel" style="top: 46%; left: 40%;">f(x, y) = 204</span>
+    </div>
+    <p class="note">El origen (0,0) está arriba a la izquierda, x crece hacia la derecha, y crece hacia abajo — la convención que usan las cámaras y OpenCV.</p>
+  </section>
+
+  <!-- 6 -->
+  <section class="slide" id="slide-6" data-title="Muestreo">
+    <span class="section-index">Acto 1 · Captura</span>
+    <p class="thesis">La luz que entra a una cámara es continua. <span class="thesis__accent">La cámara la muestrea:</span> la mide en una grilla de puntos.</p>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide" id="slide-7" data-title="Zoom real de píxeles">
+    <span class="section-index">Acto 1 · Captura</span>
+    <h2 class="slide-title">Lo que hay detrás de una zona "uniforme"</h2>
+    <div class="figure-row">
+      <figure class="figure figure--pair">
+        <img src="assets/img/pixel-zoom.png" alt="Recorte de 8x6 píxeles ampliado, con el valor numérico de cada píxel" width="720" height="540">
+        <figcaption>Recorte real — línea del horizonte</figcaption>
+      </figure>
+    </div>
+    <p class="note">A simple vista parecía una zona plana. En realidad son números que cambian de fila en fila.</p>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide" id="slide-8" data-title="Qué es un píxel">
+    <span class="section-index">Acto 1 · Captura</span>
+    <p class="hero-word">PÍXEL<span class="accent">.</span></p>
+    <p class="hero-sub">"Picture element" — una posición (x, y) y un valor: la intensidad de la luz ahí.</p>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide" id="slide-9" data-title="Cuantización">
+    <span class="section-index">Acto 1 · Captura</span>
+    <h2 class="slide-title">¿Cuántos niveles de gris?</h2>
+    <div class="figure-row">
+      <figure class="figure figure--pair">
+        <img src="assets/img/escena-gris.png" alt="Escena en escala de grises, 8 bits, 256 niveles" width="480" height="300">
+        <figcaption>8 bits · 256 niveles</figcaption>
+      </figure>
+      <figure class="figure figure--pair">
+        <img src="assets/img/escena-2bit.png" alt="Escena cuantizada a 2 bits, 4 niveles de gris, con bandas visibles" width="480" height="300">
+        <figcaption>2 bits · 4 niveles</figcaption>
+      </figure>
+    </div>
+    <p class="note">Menos niveles = menos memoria, pero aparecen bandas. Casi todo usa 8 bits por canal.</p>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide" id="slide-10" data-title="Resolución">
+    <span class="section-index">Acto 1 · Captura</span>
+    <h2 class="slide-title">¿Cuántos píxeles?</h2>
+    <div class="figure-row">
+      <figure class="figure figure--pair">
+        <img src="assets/img/escena.png" alt="Escena a resolución normal, 480x300" width="480" height="300">
+        <figcaption>480 × 300</figcaption>
+      </figure>
+      <figure class="figure figure--pair">
+        <img src="assets/img/escena-lowres.png" alt="Misma escena reducida a 40x25 y reescalada, pixelada" width="480" height="300">
+        <figcaption>40 × 25 — misma escena</figcaption>
+      </figure>
+    </div>
+    <p class="note">Con menos puntos de muestreo, cada cuadrito visible es un solo píxel agrandado — de ahí "pixelado".</p>
+  </section>
+
+  <!-- 11 -->
+  <section class="slide" id="slide-11" data-title="Resolución en números">
+    <span class="section-index">Acto 1 · Captura</span>
+    <h2 class="slide-title">En números</h2>
+    <div class="quad-stats quad-stats--4">
+      <div class="quad-stats__item"><span class="quad-stats__figure">480×300</span><span class="quad-stats__label">Ancho × alto</span></div>
+      <div class="quad-stats__item"><span class="quad-stats__figure">144K</span><span class="quad-stats__label">Píxeles totales</span></div>
+      <div class="quad-stats__item"><span class="quad-stats__figure">1</span><span class="quad-stats__label">Byte / píxel en grises</span></div>
+      <div class="quad-stats__item"><span class="quad-stats__figure">3</span><span class="quad-stats__label">Bytes / píxel en RGB</span></div>
+    </div>
+    <p class="note">Ya sabemos cómo se ve UN número por píxel. La última fila de esta tabla es una pista: en color, cada píxel trae tres. ¿De dónde salen?</p>
+  </section>
+
+  <!-- 12 -->
+  <section class="slide" id="slide-12" data-title="El sensor de una cámara">
+    <span class="section-index">Acto 1 · Captura</span>
+    <h2 class="slide-title">De dónde salen esos tres números</h2>
+    <ol class="agenda">
+      <li><span class="agenda__num">01</span><span class="agenda__body"><span class="agenda__name">Fotosito</span><span class="agenda__desc">Cada punto del sensor mide solo intensidad de luz — no distingue color</span></span></li>
+      <li><span class="agenda__num">02</span><span class="agenda__body"><span class="agenda__name">Filtro de Bayer</span><span class="agenda__desc">Un mosaico de filtros R/G/B sobre el sensor: cada fotosito ve un solo color</span></span></li>
+      <li><span class="agenda__num">03</span><span class="agenda__body"><span class="agenda__name">Demosaicing</span><span class="agenda__desc">El software interpola lo que falta y reconstruye los 3 canales en cada píxel</span></span></li>
+    </ol>
+    <p class="note">Con esto, el sensor ya nos entrega tres números por punto, no uno solo. Pero, ¿qué significan esos tres números? Eso es lo que sigue.</p>
+  </section>
+
+  <!-- ===== ACTO 2 — SIGNIFICADO: RGB Y RGBA ===== -->
+
+  <!-- 13 -->
+  <section class="slide" id="slide-13" data-title="RGB">
+    <span class="section-index">Acto 2 · RGB y RGBA</span>
+    <p class="hero-word">R<span class="accent">G</span>B</p>
+    <p class="hero-sub">Los tres números que entrega el sensor tienen nombre: Red, Green, Blue — cada uno de 0 a 255.</p>
+  </section>
+
+  <!-- 14 -->
+  <section class="slide" id="slide-14" data-title="Los tres canales">
+    <span class="section-index">Acto 2 · RGB y RGBA</span>
+    <h2 class="slide-title">Los tres canales, por separado</h2>
+    <div class="figure-row">
+      <figure class="figure figure--trio">
+        <img src="assets/img/escena-r.png" alt="Solo el canal rojo de la escena" width="480" height="300">
+        <figcaption>Canal R</figcaption>
+      </figure>
+      <figure class="figure figure--trio">
+        <img src="assets/img/escena-g.png" alt="Solo el canal verde de la escena" width="480" height="300">
+        <figcaption>Canal G</figcaption>
+      </figure>
+      <figure class="figure figure--trio">
+        <img src="assets/img/escena-b.png" alt="Solo el canal azul de la escena" width="480" height="300">
+        <figcaption>Canal B</figcaption>
+      </figure>
+    </div>
+    <p class="note">El sol es brillante en R y G, oscuro en B — el amarillo tiene poco azul. El cielo es brillante en B — el azul tiene poco rojo.</p>
+  </section>
+
+  <!-- 15 -->
+  <section class="slide" id="slide-15" data-title="Escala de grises">
+    <span class="section-index">Acto 2 · RGB y RGBA</span>
+    <h2 class="slide-title">Y si ignoramos el color otra vez</h2>
+    <div class="figure-row">
+      <figure class="figure figure--pair">
+        <img src="assets/img/escena-gris.png" alt="Escena convertida a escala de grises" width="480" height="300">
+        <figcaption>escena-gris.png</figcaption>
+      </figure>
+    </div>
+    <p class="note">Volvemos a un solo número por píxel, de 0 (negro) a 255 (blanco). RGB es solo una capa extra sobre la misma idea del Acto 1.</p>
+  </section>
+
+  <!-- 16 -->
+  <section class="slide" id="slide-16" data-title="RGBA">
+    <span class="section-index">Acto 2 · RGB y RGBA</span>
+    <p class="hero-word">RGB<span class="accent">A</span></p>
+    <p class="hero-sub">Un cuarto número, opcional: Alpha — no es color, es transparencia.</p>
+  </section>
+
+  <!-- 17 -->
+  <section class="slide" id="slide-17" data-title="RGBA en la práctica">
+    <span class="section-index">Acto 2 · RGB y RGBA</span>
+    <h2 class="slide-title">Alpha en la práctica</h2>
+    <div class="figure-row">
+      <div class="figure">
+        <div class="rgba-stage rgba-stage--checker"><img src="assets/img/rgba-demo.png" alt="Tres círculos con distinta opacidad sobre un fondo de cuadros que indica transparencia"></div>
+        <figcaption>Sobre fondo de cuadros (estándar de transparencia)</figcaption>
+      </div>
+      <div class="figure">
+        <div class="rgba-stage rgba-stage--dark"><img src="assets/img/rgba-demo.png" alt="Los mismos círculos sobre un fondo oscuro"></div>
+        <figcaption>Sobre fondo oscuro</figcaption>
+      </div>
+      <div class="figure">
+        <div class="rgba-stage rgba-stage--photo"><img src="assets/img/rgba-demo.png" alt="Los mismos círculos sobre una foto de fondo"></div>
+        <figcaption>Sobre una foto</figcaption>
+      </div>
+    </div>
+    <p class="note">Es el mismo archivo PNG en los tres casos — solo cambia lo que hay detrás. El círculo rojo es opaco (alpha 255), el verde es semitransparente (150), el azul casi no se ve (70).</p>
+  </section>
+
+  <!-- 18 -->
+  <section class="slide" id="slide-18" data-title="El canal alpha">
+    <span class="section-index">Acto 2 · RGB y RGBA</span>
+    <h2 class="slide-title">Alpha también es una matriz de números</h2>
+    <div class="figure-row">
+      <figure class="figure figure--pair">
+        <img src="assets/img/rgba-alpha-channel.png" alt="El canal alpha visto como imagen en escala de grises: blanco es opaco, negro es transparente" width="420" height="320">
+        <figcaption>Canal alpha — blanco = opaco, negro = transparente</figcaption>
+      </figure>
+    </div>
+    <p class="note">Igual que R, G o B: un valor de 0 a 255 por píxel. Con esto ya sabemos qué SIGNIFICA cada número de la matriz. Falta una pregunta: ¿cómo se convierte eso otra vez en luz que puedas ver?</p>
+  </section>
+
+  <!-- ===== ACTO 3 — CÓMO SE VE EN UNA PANTALLA ===== -->
+
+  <!-- 19 -->
+  <section class="slide" id="slide-19" data-title="Cómo se crea el color">
+    <span class="section-index">Acto 3 · Pantalla</span>
+    <p class="thesis">Una pantalla no <span class="thesis__accent">guarda</span> colores. <span class="thesis__accent">Los crea</span>, mezclando luz roja, verde y azul.</p>
+    <div class="figure-row">
+      <figure class="figure figure--pair">
+        <img src="assets/img/rgb-mezcla-aditiva.png" alt="Tres círculos de luz roja, verde y azul superpuestos, mezclándose de forma aditiva" width="480" height="360">
+        <figcaption>Mezcla aditiva de luz</figcaption>
+      </figure>
+    </div>
+    <p class="note">Rojo + Verde = Amarillo · Rojo + Azul = Magenta · Verde + Azul = Cian · Los tres juntos = Blanco. Es luz, no pintura — se suma, no se resta.</p>
+  </section>
+
+  <!-- 20 -->
+  <section class="slide" id="slide-20" data-title="Subpíxeles">
+    <span class="section-index">Acto 3 · Pantalla</span>
+    <h2 class="slide-title">Un píxel de pantalla son en realidad tres</h2>
+    <div class="figure-row">
+      <figure class="figure figure--hero">
+        <img src="assets/img/subpixeles.png" alt="Comparación: de cerca se ven franjas roja, verde y azul; de lejos se ve un solo color sólido" width="670" height="360">
+        <figcaption>subpíxeles R · G · B</figcaption>
+      </figure>
+    </div>
+    <p class="note">Cada píxel físico de una pantalla tiene tres sub-elementos de luz. Tu ojo, a distancia normal, los mezcla en el color que guardaba la matriz RGB.</p>
+  </section>
+
+  <!-- 21 -->
+  <section class="slide" id="slide-21" data-title="Viewport y tamaño del píxel">
+    <span class="section-index">Acto 3 · Pantalla</span>
+    <h2 class="slide-title">Un píxel no tiene un tamaño fijo</h2>
+    <p class="thesis thesis--sm">El "viewport" es el área visible en una pantalla. Ahí, un píxel es solo una <span class="thesis__accent">unidad lógica</span> — su tamaño físico real depende del dispositivo.</p>
+    <div class="quad-stats quad-stats--3 mt-lg">
+      <div class="quad-stats__item"><span class="quad-stats__figure">~460</span><span class="quad-stats__label">PPI en un celular</span></div>
+      <div class="quad-stats__item"><span class="quad-stats__figure">~110</span><span class="quad-stats__label">PPI en un monitor</span></div>
+      <div class="quad-stats__item"><span class="quad-stats__figure">~30</span><span class="quad-stats__label">PPI en un proyector de salón</span></div>
+    </div>
+    <p class="note">PPI = píxeles por pulgada. El mismo "1 píxel" es diminuto en tu celular y enorme cuando se proyecta en el tablero — por eso esta clase usa texto e imágenes grandes.</p>
+  </section>
+
+  <!-- 22 -->
+  <section class="slide" id="slide-22" data-title="Resumen">
+    <span class="section-index">Resumen</span>
+    <h2 class="slide-title">El recorrido de hoy</h2>
+    <ol class="agenda">
+      <li><span class="agenda__num">01</span><span class="agenda__body"><span class="agenda__name">Captura</span><span class="agenda__desc">La cámara muestrea y cuantiza la luz en una matriz de números</span></span></li>
+      <li><span class="agenda__num">02</span><span class="agenda__body"><span class="agenda__name">Significado</span><span class="agenda__desc">Esos números son RGB — y a veces RGBA, si además hay transparencia</span></span></li>
+      <li><span class="agenda__num">03</span><span class="agenda__body"><span class="agenda__name">Pantalla</span><span class="agenda__desc">La pantalla recrea esa luz con subpíxeles — a un tamaño que depende del dispositivo</span></span></li>
+    </ol>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var deck = document.getElementById('deck');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var dotsWrap = document.getElementById('dots');
+  var counter = document.getElementById('counter');
+  var progress = document.getElementById('progress');
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var total = slides.length;
+  var current = 0;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  slides.forEach(function (slide, i) {
+    var dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'dots__dot';
+    dot.setAttribute('aria-label', 'Ir a: ' + (slide.dataset.title || ('Diapositiva ' + (i + 1))));
+    dot.addEventListener('click', function () { goTo(i); });
+    dotsWrap.appendChild(dot);
+  });
+  var dots = Array.prototype.slice.call(dotsWrap.children);
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function setActive(i) {
+    current = i;
+    dots.forEach(function (d, idx) { d.classList.toggle('is-active', idx === i); });
+    if (dots[i]) dots[i].setAttribute('aria-current', 'true');
+    dots.forEach(function (d, idx) { if (idx !== i) d.removeAttribute('aria-current'); });
+    counter.textContent = pad(i + 1) + ' / ' + pad(total);
+    progress.style.width = (((i + 1) / total) * 100) + '%';
+    prevBtn.disabled = i === 0;
+    nextBtn.disabled = i === total - 1;
+  }
+
+  function goTo(i) {
+    var target = Math.min(Math.max(i, 0), total - 1);
+    slides[target].scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+        setActive(slides.indexOf(entry.target));
+      }
+    });
+  }, { root: deck, threshold: [0.6] });
+  slides.forEach(function (s) { io.observe(s); });
+
+  document.addEventListener('keydown', function (e) {
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].indexOf(e.key) > -1) {
+      e.preventDefault();
+      goTo(current + 1);
+    } else if (['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) > -1) {
+      e.preventDefault();
+      goTo(current - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      goTo(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      goTo(total - 1);
+    }
+  });
+
+  prevBtn.addEventListener('click', function () { goTo(current - 1); });
+  nextBtn.addEventListener('click', function () { goTo(current + 1); });
+
+  setActive(0);
+})();
+</script>
+</body>
+</html>

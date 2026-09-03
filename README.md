@@ -23,9 +23,23 @@ Material independiente de periodo académico.
   convolución y cómo un kernel transforma una imagen; filtros de suavizado
   (promedio, gaussiano, mediana) y de bordes (Sobel, Laplaciano, Canny),
   con ejemplos en OpenCV.
+- `IoTClase14_EticaDelDato.html` — Unidad 04 · Clase 14: ética del dato
+  (finalidad, minimización, consentimiento, retención), seguridad frente a
+  privacidad y el costo energético y material de un despliegue IoT.
+- `IoTClase15_EnfoqueSTEAM.html` — Unidad 04 · Clase 15: enfoque STEAM
+  aplicado al proyecto integrador, dimensión educativa y comunitaria, y
+  revisión entre pares.
+- `IoTClase16_Sustentacion.html` — Unidad 04 · Clase 16: sustentación del
+  proyecto integrador, verificación técnica previa, guion de la presentación
+  e informe final del Corte 3.
 - `assets/img/` — imágenes de las clases. `assets/gen_clase2.py` regenera
   las de la Clase 2 a partir de `assets/img/escena.png` (requiere
   `opencv-python` y `numpy`).
+
+Las clases 14 y 15 caen en el periodo de movilidad académica del docente
+(12 al 22 de noviembre): son clases grabadas, con tutoría sincrónica el
+miércoles y foro de dudas con respuesta dentro de las 24 horas. Cada deck lo
+declara en su segunda diapositiva.
 
 ## Plan de evaluación
 

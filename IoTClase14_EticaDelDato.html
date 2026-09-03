@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>IoT — Clase 14: Ética del dato y sostenibilidad</title>
+<meta name="description" content="Clase 14 de Internet de las Cosas: privacidad, consentimiento, minimización de datos, y el costo energético y material de un despliegue IoT.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  /*
+    Mismo sistema visual del resto de la asignatura (ver plan-de-aula.html y
+    VisionClase2_Convolucion.html): deck fijado en light mode a propósito,
+    material para proyectar en clase. Tipografías con fallback a system fonts
+    por si el salón no tiene internet.
+
+    Clase grabada de la semana de movilidad académica (12 al 22 de noviembre),
+    con tutoría sincrónica el miércoles y foro de dudas con respuesta en 24 horas.
+  */
+  :root {
+    color-scheme: light;
+    --paper: #F2F4F5;
+    --paper-raised: #FFFFFF;
+    --ink: #121316;
+    --muted: #5B5F66;
+    --line: #D7DADD;
+    --red: #D6231D;
+    --red-ink: #FFFFFF;
+    --red-wash: #FBE9E8;
+
+    --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
+
+    --gutter: clamp(24px, 6vw, 96px);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    color-scheme: light;
+  }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 20px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  a { color: inherit; }
+  code { font-family: var(--font-mono); font-size: 0.85em; }
+
+  /* ---------- Deck mechanics ---------- */
+  .deck {
+    height: 100dvh;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .deck { scroll-behavior: auto; }
+  }
+
+  .slide {
+    min-height: 100dvh;
+    width: 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(72px, 10vh, 120px) var(--gutter);
+    position: relative;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: clamp(14px, 1.3vw, 17px);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin: 0 0 20px;
+  }
+
+  .section-index {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: clamp(14px, 1.3vw, 17px);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--red);
+    border: 1px solid var(--red);
+    border-radius: 999px;
+    padding: 6px 16px;
+    margin: 0 0 24px;
+  }
+
+  .slide-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.6rem, 5.8vw, 4.6rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 clamp(28px, 4vw, 48px);
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+
+  .mt-lg { margin-top: clamp(32px, 4.4vw, 52px); }
+  .mt-md { margin-top: clamp(20px, 2.8vw, 32px); }
+
+  .note {
+    font-family: var(--font-body);
+    font-size: clamp(1.05rem, 1.4vw, 1.25rem);
+    letter-spacing: 0;
+    color: var(--muted);
+    max-width: 62ch;
+    line-height: 1.6;
+    margin: clamp(22px, 3vw, 32px) 0 0;
+  }
+
+  /* ---------- Slide 1 — portada ---------- */
+  .slide--title .title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(2.6rem, 6.6vw, 5rem);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin: 0 0 clamp(24px, 3.6vw, 36px);
+    text-wrap: balance;
+    max-width: 16ch;
+  }
+  .subtitle {
+    font-family: var(--font-mono);
+    font-size: clamp(1.15rem, 1.9vw, 1.45rem);
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    margin: 0;
+  }
+
+  .hint {
+    position: absolute;
+    left: var(--gutter);
+    bottom: clamp(28px, 5vh, 48px);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---------- Palabra gigante (una idea, en grande) ---------- */
+  .hero-word {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(4rem, 13vw, 10rem);
+    letter-spacing: -0.03em;
+    line-height: 0.92;
+    color: var(--ink);
+    margin: 0;
+  }
+  .hero-word .accent { color: var(--red); }
+  .hero-sub {
+    font-family: var(--font-body);
+    font-size: clamp(1.25rem, 2vw, 1.6rem);
+    color: var(--muted);
+    margin: clamp(14px, 2vw, 20px) 0 0;
+    letter-spacing: 0;
+    max-width: 48ch;
+  }
+
+  /* ---------- Afirmaciones centrales (tesis), en grande ---------- */
+  .thesis {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.3rem, 4.8vw, 3.6rem);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin: 0;
+    max-width: 22ch;
+    text-wrap: balance;
+    color: var(--muted);
+  }
+  .thesis__accent { color: var(--ink); }
+  .thesis--sm { font-size: clamp(1.9rem, 3.6vw, 2.8rem); max-width: 28ch; }
+
+  /* ---------- Agenda-style numbered list, en grande ---------- */
+  .agenda {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    max-width: 900px;
+  }
+  .agenda li {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(20px, 3vw, 40px);
+    padding: clamp(16px, 2.4vw, 24px) 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .agenda li:first-child { padding-top: 0; }
+  .agenda__num {
+    font-family: var(--font-mono);
+    font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+    color: var(--red);
+    flex-shrink: 0;
+    width: 2.4ch;
+  }
+  .agenda__body { display: flex; flex-direction: column; gap: 6px; }
+  .agenda__name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(1.4rem, 2.4vw, 1.8rem);
+    letter-spacing: -0.005em;
+  }
+  .agenda__desc {
+    font-size: clamp(1.1rem, 1.5vw, 1.3rem);
+    color: var(--muted);
+  }
+
+  /* ---------- Figuras ---------- */
+  .figure-row {
+    display: flex;
+    gap: clamp(16px, 2.6vw, 32px);
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-top: clamp(22px, 3vw, 34px);
+  }
+  .figure { display: flex; flex-direction: column; gap: 10px; }
+  .figure img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--ink);
+    background: var(--paper-raised);
+  }
+  .figure figcaption {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    max-width: 34ch;
+  }
+  .figure--hero img { max-width: min(560px, 100%); max-height: 44vh; width: auto; }
+  .figure--pair img { max-width: min(330px, 42vw); }
+  .figure--trio img { max-width: min(260px, 29vw); }
+  .figure--quad img { max-width: min(195px, 22vw); }
+  .figure--quad figcaption { max-width: 22ch; }
+
+  /* ---------- Diagrama de kernel / ventana ---------- */
+  .conv-line {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 2.4vw, 28px);
+    flex-wrap: wrap;
+    margin-top: clamp(24px, 3.4vw, 38px);
+  }
+  .conv-op {
+    font-family: var(--font-mono);
+    font-size: clamp(1.6rem, 2.9vw, 2.3rem);
+    color: var(--red);
+  }
+  .kernel {
+    display: grid;
+    grid-template-columns: repeat(var(--n, 3), minmax(44px, 66px));
+    gap: 4px;
+  }
+  .kernel__cell {
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--ink);
+    background: var(--paper-raised);
+    font-family: var(--font-mono);
+    font-size: clamp(15px, 1.9vw, 20px);
+    font-variant-numeric: tabular-nums;
+  }
+  .kernel__cell--center { background: var(--red-wash); border-color: var(--red); color: var(--red); }
+  .kernel__cell--hot { background: var(--red); border-color: var(--red); color: var(--red-ink); }
+  .kernel__cell--dim { color: var(--muted); }
+  .kernel__label {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 10px 0 0;
+  }
+  .conv-result {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.3rem, 4.4vw, 3.4rem);
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  /* Imagen como grilla, con una ventana 3x3 resaltada */
+  .imgrid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(34px, 52px));
+    gap: 3px;
+    margin-top: clamp(22px, 3vw, 32px);
+  }
+  .imgrid__px {
+    aspect-ratio: 1;
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    font-family: var(--font-mono);
+    font-size: clamp(12px, 1.4vw, 15px);
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+  }
+  .imgrid__px--win { border-color: var(--red); border-width: 2px; background: var(--red-wash); color: var(--red); }
+
+  /* ---------- Bloque de código ---------- */
+  .code {
+    font-family: var(--font-mono);
+    font-size: clamp(14px, 1.55vw, 17px);
+    line-height: 1.75;
+    background: var(--paper-raised);
+    border: 1px solid var(--ink);
+    padding: clamp(18px, 2.4vw, 28px);
+    max-width: 860px;
+    white-space: pre;
+    overflow-x: auto;
+    margin: clamp(22px, 3vw, 32px) 0 0;
+    tab-size: 4;
+  }
+  .code .cm { color: var(--muted); }
+  .code .fn { color: var(--red); }
+  .code .st { color: #1f6f43; }
+
+  /* ---------- Tabla comparativa ---------- */
+  .cmp {
+    width: 100%;
+    max-width: 1000px;
+    border-collapse: collapse;
+    margin-top: clamp(22px, 3vw, 32px);
+    font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+  }
+  .cmp th, .cmp td {
+    text-align: left;
+    padding: clamp(10px, 1.6vw, 16px) clamp(12px, 1.8vw, 18px);
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  .cmp thead th {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--red);
+    border-bottom: 2px solid var(--ink);
+  }
+  .cmp td:first-child { font-weight: 600; font-family: var(--font-display); }
+  .cmp code { color: var(--ink); background: var(--red-wash); padding: 1px 6px; }
+
+  /* ---------- Aviso de modalidad de la semana ---------- */
+  .aviso {
+    border-left: 4px solid var(--red);
+    background: var(--paper-raised);
+    padding: clamp(18px, 2.6vw, 26px) clamp(20px, 3vw, 30px);
+    max-width: 64ch;
+  }
+  .aviso__title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.05rem, 1.9vw, 1.35rem);
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+  }
+  .aviso p { margin: 0 0 10px; font-size: clamp(0.98rem, 1.45vw, 1.12rem); color: var(--muted); }
+  .aviso p:last-child { margin-bottom: 0; }
+  .aviso strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Filas clave / valor ---------- */
+  .kv {
+    display: flex;
+    flex-direction: column;
+    max-width: 900px;
+    width: 100%;
+    border-top: 1px solid var(--line);
+    margin-top: clamp(22px, 3vw, 32px);
+  }
+  .kv__row {
+    display: grid;
+    grid-template-columns: minmax(130px, 22%) 1fr;
+    gap: clamp(14px, 2.4vw, 28px);
+    padding: clamp(12px, 1.8vw, 18px) 0;
+    border-bottom: 1px solid var(--line);
+    align-items: baseline;
+  }
+  .kv__key {
+    font-family: var(--font-mono);
+    font-size: clamp(0.78rem, 1.05vw, 0.9rem);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--red);
+  }
+  .kv__val { font-size: clamp(1rem, 1.4vw, 1.15rem); }
+
+  /* ---------- Tarjetas planas ---------- */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: clamp(14px, 2vw, 22px);
+    max-width: 1080px;
+    margin: clamp(22px, 3vw, 32px) 0 0;
+  }
+  .paper-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    padding: clamp(18px, 2.2vw, 26px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .paper-card__eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--red);
+  }
+  .paper-card h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(1.1rem, 1.7vw, 1.35rem);
+    margin: 0;
+    letter-spacing: -0.005em;
+  }
+  .paper-card p {
+    font-size: clamp(0.94rem, 1.2vw, 1.06rem);
+    color: var(--muted);
+    margin: 0;
+  }
+
+  /* ---------- Checklist ---------- */
+  .check {
+    list-style: none;
+    margin: clamp(22px, 3vw, 32px) 0 0;
+    padding: 0;
+    max-width: 70ch;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(12px, 1.8vw, 17px);
+  }
+  .check li {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 15px;
+    font-size: clamp(1rem, 1.45vw, 1.15rem);
+    line-height: 1.45;
+    align-items: start;
+  }
+  .check li::before {
+    content: "";
+    width: 17px;
+    height: 17px;
+    border: 2px solid var(--ink);
+    margin-top: 0.3em;
+  }
+  .check b { font-weight: 600; }
+
+  /* ---------- Caja de entrega ---------- */
+  .entrega {
+    border: 2px solid var(--ink);
+    background: var(--paper-raised);
+    padding: clamp(20px, 3vw, 32px);
+    max-width: 72ch;
+    margin-top: clamp(20px, 2.6vw, 28px);
+  }
+  .entrega__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    align-items: baseline;
+    margin-bottom: 16px;
+  }
+  .entrega__name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.2rem, 2.1vw, 1.55rem);
+    letter-spacing: -0.01em;
+  }
+  .entrega__pct {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    background: var(--red);
+    color: var(--red-ink);
+    padding: 4px 10px;
+  }
+  .entrega ul { margin: 0; padding-left: 20px; }
+  .entrega li { font-size: clamp(0.98rem, 1.35vw, 1.1rem); margin-bottom: 8px; color: var(--muted); }
+  .entrega li b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Cadena de pasos ---------- */
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: clamp(10px, 1.6vw, 16px);
+    margin: clamp(26px, 3.6vw, 38px) 0 0;
+    padding: 0;
+    list-style: none;
+    max-width: 1000px;
+  }
+  .flow li {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(1rem, 1.8vw, 1.25rem);
+    border: 1px solid var(--ink);
+    background: var(--paper-raised);
+    padding: 10px 17px;
+  }
+  .flow__arrow {
+    border: none !important;
+    background: transparent !important;
+    color: var(--red);
+    font-family: var(--font-mono);
+    padding: 0 !important;
+  }
+
+  /* ---------- Diapositiva de cierre ---------- */
+  .contact-recap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: clamp(0.86rem, 1.15vw, 1rem);
+    color: var(--muted);
+    margin-top: clamp(24px, 3vw, 34px);
+  }
+  .contact-recap a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  .contact-recap a:hover { color: var(--red); }
+
+  /* ---------- Quad stats ---------- */
+  .quad-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(24px, 3.4vw, 40px);
+    max-width: 860px;
+    margin: 0 0 clamp(8px, 1vw, 12px);
+  }
+  .quad-stats--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (min-width: 700px) {
+    .quad-stats--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  .quad-stats--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 760px; }
+  .quad-stats__item { display: flex; flex-direction: column; gap: 8px; }
+  .quad-stats__figure {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    color: var(--red);
+  }
+  .quad-stats__label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---------- Chrome ---------- */
+  .frame { position: fixed; inset: 0; pointer-events: none; z-index: 25; }
+  .frame__tick { position: absolute; width: 20px; height: 20px; }
+  .frame__tick--tl { top: 14px; left: 14px; border-top: 1.5px solid var(--muted); border-left: 1.5px solid var(--muted); }
+  .frame__tick--tr { top: 14px; right: 14px; border-top: 1.5px solid var(--muted); border-right: 1.5px solid var(--muted); }
+
+  .progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: var(--red);
+    width: 4%;
+    z-index: 30;
+    transition: width 0.25s ease;
+  }
+  @media (prefers-reduced-motion: reduce) { .progress { transition: none; } }
+
+  .counter {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    border: 1px solid var(--line);
+    padding: 4px 12px;
+    z-index: 30;
+  }
+
+  .brandmark {
+    position: fixed;
+    bottom: 20px;
+    left: var(--gutter);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    z-index: 30;
+    display: none;
+  }
+  .brandmark:hover { color: var(--red); }
+
+  .dots {
+    position: fixed;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 30;
+    max-height: 80vh;
+    overflow: hidden;
+  }
+  .dots__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1px solid var(--muted);
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .dots__dot.is-active { background: var(--red); border-color: var(--red); width: 9px; height: 9px; }
+  .dots__dot:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+  .controls { position: fixed; bottom: 20px; right: 24px; display: flex; gap: 8px; z-index: 30; }
+  .controls button {
+    width: 40px; height: 40px;
+    border: 1px solid var(--ink);
+    background: var(--paper-raised);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .controls button:hover { background: var(--ink); color: var(--paper); }
+  .controls button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  .controls button:disabled { opacity: 0.35; cursor: default; }
+  .controls button:disabled:hover { background: var(--paper-raised); color: var(--ink); }
+
+  @media (min-width: 720px) {
+    .brandmark { display: block; }
+  }
+  @media (max-width: 560px) {
+    .dots { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="frame" aria-hidden="true">
+  <span class="frame__tick frame__tick--tl"></span>
+  <span class="frame__tick frame__tick--tr"></span>
+</div>
+<div class="progress" id="progress"></div>
+<div class="counter" id="counter">01 / 16</div>
+<a class="brandmark" href="index.html">Internet de las Cosas · Clase 14 — Ética del dato</a>
+<nav class="dots" id="dots" aria-label="Navegación de diapositivas"></nav>
+<div class="controls">
+  <button type="button" id="prevBtn" aria-label="Diapositiva anterior">‹</button>
+  <button type="button" id="nextBtn" aria-label="Siguiente diapositiva">›</button>
+</div>
+
+
+<main class="deck" id="deck">
+
+  <section class="slide slide--title" id="slide-1" data-title="Portada">
+    <p class="eyebrow">Clase 14 · Semana 14</p>
+    <h1 class="title">Ética del dato<br>y sostenibilidad</h1>
+    <p class="subtitle">Unidad 04 · Seguridad, ética y enfoque STEAM</p>
+    <p class="hint">Desliza o pulsa → para continuar</p>
+  </section>
+
+  <section class="slide" id="slide-2" data-title="Cómo se cursa esta semana">
+    <p class="eyebrow">Antes de empezar</p>
+    <h2 class="slide-title">Semana con acompañamiento remoto</h2>
+    <div class="aviso">
+      <p class="aviso__title">Movilidad académica del docente · 12 al 22 de noviembre</p>
+      <p>Esta clase queda grabada y publicada en el aula el <strong>lunes antes de las 8 de la mañana</strong>, junto con la guía de trabajo en PDF.</p>
+      <p>Hay <strong>tutoría sincrónica por videoconferencia el miércoles</strong>: el enlace está en el aula y la sesión queda grabada para quien no pueda conectarse.</p>
+      <p>El <strong>foro de dudas</strong> responde dentro de las 24 horas. Y antes de entregar hay <strong>revisión entre pares</strong>, con las observaciones escritas dentro de la plataforma.</p>
+    </div>
+  </section>
+
+  <section class="slide" id="slide-3" data-title="La pregunta">
+    <p class="eyebrow">Para empezar</p>
+    <h2 class="slide-title">Tu proyecto mide algo de alguien</h2>
+    <p class="note">Llevamos trece semanas preguntándonos si el dato llega. Esta semana la pregunta cambia: ¿teníamos derecho a tomarlo, y qué pasa con él después?</p>
+  </section>
+
+  <section class="slide" id="slide-4" data-title="El dato no es neutro">
+    <p class="eyebrow">La idea central</p>
+    <h2 class="thesis">Un sensor de temperatura en una casa<br><span class="thesis__accent">también dice a qué hora hay alguien adentro.</span></h2>
+  </section>
+
+  <section class="slide" id="slide-5" data-title="Qué revela cada dato">
+    <span class="section-index">Concepto · 1</span>
+    <h2 class="slide-title">El dato técnico y lo que deja ver</h2>
+    <table class="cmp">
+      <thead>
+        <tr><th>Lo que mide el sensor</th><th>Lo que se puede deducir</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Consumo eléctrico</td><td>Horarios de la familia, cuándo la casa queda sola, qué electrodomésticos hay</td></tr>
+        <tr><td>Humedad del suelo</td><td>Ubicación exacta del cultivo, su tamaño y su rendimiento</td></tr>
+        <tr><td>Presencia o movimiento</td><td>Rutinas de una persona, hora de llegada y de salida</td></tr>
+        <tr><td>Calidad del aire con GPS</td><td>Recorrido diario de quien lleva el dispositivo</td></tr>
+      </tbody>
+    </table>
+    <p class="note mt-md">Ninguna de esas columnas de la izquierda parece un dato personal. Todas las de la derecha lo son.</p>
+  </section>
+
+  <section class="slide" id="slide-6" data-title="Los cuatro principios">
+    <span class="section-index">Concepto · 2</span>
+    <h2 class="slide-title">Cuatro preguntas antes de capturar</h2>
+    <div class="card-grid">
+      <div class="paper-card">
+        <span class="paper-card__eyebrow">Principio 01</span>
+        <h3>Finalidad</h3>
+        <p>¿Para qué exactamente necesito este dato? Si no puedo decirlo en una frase, no debería capturarlo.</p>
+      </div>
+      <div class="paper-card">
+        <span class="paper-card__eyebrow">Principio 02</span>
+        <h3>Minimización</h3>
+        <p>¿Es el dato más pequeño que resuelve el problema? Capturar "por si acaso" es la falla más común.</p>
+      </div>
+      <div class="paper-card">
+        <span class="paper-card__eyebrow">Principio 03</span>
+        <h3>Consentimiento</h3>
+        <p>¿La persona medida sabe que se le está midiendo y aceptó? Colocar el sensor no es pedir permiso.</p>
+      </div>
+      <div class="paper-card">
+        <span class="paper-card__eyebrow">Principio 04</span>
+        <h3>Retención</h3>
+        <p>¿Cuánto tiempo se guarda y quién lo borra? Un dato guardado para siempre es un riesgo para siempre.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="slide-7" data-title="Minimización en código">
+    <span class="section-index">Concepto · 3</span>
+    <h2 class="slide-title">La minimización se decide en el código</h2>
+    <div class="code"><span class="cm"># Captura todo lo que el sensor puede dar</span>
+registro = {
+    <span class="st">"temp"</span>: sensor.temperatura(),
+    <span class="st">"hum"</span>: sensor.humedad(),
+    <span class="st">"lat"</span>: gps.lat(),        <span class="cm"># ¿lo necesito?</span>
+    <span class="st">"lon"</span>: gps.lon(),        <span class="cm"># ¿lo necesito?</span>
+    <span class="st">"id_equipo"</span>: MAC,       <span class="cm"># identifica el dispositivo</span>
+}
+
+<span class="cm"># Captura solo lo que responde la pregunta del proyecto</span>
+registro = {
+    <span class="st">"temp"</span>: sensor.temperatura(),
+    <span class="st">"zona"</span>: <span class="st">"invernadero-2"</span>,   <span class="cm"># ubicación, no coordenada</span>
+    <span class="st">"ts"</span>: <span class="fn">time</span>(),
+}</div>
+    <p class="note mt-md">La segunda versión responde exactamente la misma pregunta y ya no permite reconstruir dónde estuvo nadie.</p>
+  </section>
+
+  <section class="slide" id="slide-8" data-title="Seguridad no es privacidad">
+    <span class="section-index">Concepto · 4</span>
+    <h2 class="slide-title">Seguridad y privacidad no son lo mismo</h2>
+    <table class="cmp">
+      <thead>
+        <tr><th>Seguridad · semana 13</th><th>Privacidad · esta semana</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Que nadie más lea el dato</td><td>Que el dato no debiera existir</td></tr>
+        <tr><td>Cifrado, autenticación, credenciales</td><td>Finalidad, consentimiento, minimización</td></tr>
+        <tr><td>Protege del atacante</td><td>Protege de quien tiene acceso legítimo</td></tr>
+        <tr><td>Es un problema técnico</td><td>Es una decisión de diseño</td></tr>
+      </tbody>
+    </table>
+    <p class="note mt-md">Un sistema perfectamente cifrado que recolecta datos que nadie autorizó sigue siendo un mal sistema.</p>
+  </section>
+
+  <section class="slide" id="slide-9" data-title="Consentimiento real">
+    <span class="section-index">Concepto · 5</span>
+    <h2 class="slide-title">Consentimiento en un proyecto de curso</h2>
+    <ol class="agenda">
+      <li>
+        <span class="agenda__num">01</span>
+        <span class="agenda__body">
+          <span class="agenda__name">Identifica a quién afecta</span>
+          <span class="agenda__desc">Si el sensor está en un espacio compartido, los medidos no son solo los del equipo.</span>
+        </span>
+      </li>
+      <li>
+        <span class="agenda__num">02</span>
+        <span class="agenda__body">
+          <span class="agenda__name">Explica en lenguaje llano</span>
+          <span class="agenda__desc">Qué se mide, cada cuánto, dónde se guarda y por cuánto tiempo. Tres frases bastan.</span>
+        </span>
+      </li>
+      <li>
+        <span class="agenda__num">03</span>
+        <span class="agenda__body">
+          <span class="agenda__name">Deja constancia</span>
+          <span class="agenda__desc">Un aviso visible junto al dispositivo, o un texto firmado. Sirve como evidencia en el informe.</span>
+        </span>
+      </li>
+      <li>
+        <span class="agenda__num">04</span>
+        <span class="agenda__body">
+          <span class="agenda__name">Ofrece una salida</span>
+          <span class="agenda__desc">Cómo pide alguien que se deje de medir o que se borren sus datos.</span>
+        </span>
+      </li>
+    </ol>
+  </section>
+
+  <section class="slide" id="slide-10" data-title="El costo material">
+    <span class="section-index">Sostenibilidad</span>
+    <h2 class="slide-title">El IoT tiene un costo físico</h2>
+    <div class="quad-stats quad-stats--4">
+      <div class="quad-stats__item">
+        <span class="quad-stats__figure">mA</span>
+        <span class="quad-stats__label">Energía que consume el nodo, encendido todo el día</span>
+      </div>
+      <div class="quad-stats__item">
+        <span class="quad-stats__figure">Li</span>
+        <span class="quad-stats__label">Baterías que se agotan y hay que reponer</span>
+      </div>
+      <div class="quad-stats__item">
+        <span class="quad-stats__figure">kB</span>
+        <span class="quad-stats__label">Tráfico por cada envío a la nube, multiplicado por nodos</span>
+      </div>
+      <div class="quad-stats__item">
+        <span class="quad-stats__figure">RAEE</span>
+        <span class="quad-stats__label">Residuo electrónico cuando el dispositivo deja de servir</span>
+      </div>
+    </div>
+    <p class="note mt-lg">Un proyecto que "solo mide temperatura" con cien nodos ya es una decisión ambiental.</p>
+  </section>
+
+  <section class="slide" id="slide-11" data-title="Diseño sostenible">
+    <span class="section-index">Sostenibilidad</span>
+    <h2 class="slide-title">Cuatro decisiones que bajan el costo</h2>
+    <ol class="agenda">
+      <li>
+        <span class="agenda__num">01</span>
+        <span class="agenda__body">
+          <span class="agenda__name">Bajar la frecuencia de muestreo</span>
+          <span class="agenda__desc">¿La temperatura del suelo cambia cada segundo? Casi nunca. Cada cinco minutos suele bastar.</span>
+        </span>
+      </li>
+      <li>
+        <span class="agenda__num">02</span>
+        <span class="agenda__body">
+          <span class="agenda__name">Procesar antes de transmitir</span>
+          <span class="agenda__desc">Es lo de la semana 11: enviar el promedio de diez lecturas, no las diez. Menos radio, menos batería.</span>
+        </span>
+      </li>
+      <li>
+        <span class="agenda__num">03</span>
+        <span class="agenda__body">
+          <span class="agenda__name">Dormir el microcontrolador</span>
+          <span class="agenda__desc">Modo de bajo consumo entre lecturas. Es la diferencia entre días y meses de autonomía.</span>
+        </span>
+      </li>
+      <li>
+        <span class="agenda__num">04</span>
+        <span class="agenda__body">
+          <span class="agenda__name">Pensar el final del dispositivo</span>
+          <span class="agenda__desc">Qué pasa con la placa, la batería y la carcasa cuando el proyecto termine.</span>
+        </span>
+      </li>
+    </ol>
+  </section>
+
+  <section class="slide" id="slide-12" data-title="Impacto en el contexto">
+    <p class="eyebrow">Nuestro contexto</p>
+    <h2 class="slide-title">¿A quién sirve tu proyecto en La Guajira?</h2>
+    <p class="note">En la Bitácora 01 escribiste tres aplicaciones de IoT para el contexto local. Vuelve a leerlas con la pregunta de esta semana: ¿quién gana con esa medición, quién queda medido, y son las mismas personas?</p>
+    <p class="note mt-md">Un sistema que mide el agua de una comunidad y entrega el dato solo a quien la administra no es lo mismo que uno que también se lo devuelve a la comunidad.</p>
+  </section>
+
+  <section class="slide" id="slide-13" data-title="El debate del foro">
+    <span class="section-index">Actividad de la semana</span>
+    <h2 class="slide-title">Debate asincrónico en el foro</h2>
+    <div class="kv">
+      <div class="kv__row"><span class="kv__key">Consigna</span><span class="kv__val">¿Qué implicación ética o de sostenibilidad tiene el dato que recolecta tu proyecto? Una publicación propia.</span></div>
+      <div class="kv__row"><span class="kv__key">Respuesta</span><span class="kv__val">Comenta el caso de al menos un compañero señalando un riesgo que no haya visto.</span></div>
+      <div class="kv__row"><span class="kv__key">Moderación</span><span class="kv__val">El docente participa desde la movilidad, con respuesta dentro de las 24 horas.</span></div>
+      <div class="kv__row"><span class="kv__key">Cuenta</span><span class="kv__val">La participación en el foro hace parte de la entrega de la semana.</span></div>
+    </div>
+  </section>
+
+  <section class="slide" id="slide-14" data-title="Tesis">
+    <p class="eyebrow">Para quedarnos con esto</p>
+    <h2 class="thesis">La pregunta técnica es si el sistema puede medirlo.<br><span class="thesis__accent">La pregunta profesional es si debe.</span></h2>
+  </section>
+
+  <section class="slide" id="slide-15" data-title="La entrega">
+    <p class="eyebrow">Lo que se entrega</p>
+    <h2 class="slide-title">Reflexión ética del proyecto integrador</h2>
+    <div class="entrega">
+      <div class="entrega__head">
+        <span class="entrega__name">Reflexión ética</span>
+        <span class="entrega__pct">Insumo del Corte 3</span>
+      </div>
+      <ul>
+        <li><b>Identifica qué datos recolecta el proyecto y de quién.</b></li>
+        <li><b>Analiza el consentimiento y la privacidad</b> de esos datos.</li>
+        <li><b>Propone al menos una medida concreta</b> de uso responsable.</li>
+        <li><b>Argumenta el impacto</b> del proyecto en sostenibilidad o bienestar.</li>
+      </ul>
+    </div>
+    <p class="note mt-md">PDF de dos páginas en AKUMAJA, más la participación en el foro de la semana. Es formativa, pero entra al informe final del Corte 3.</p>
+  </section>
+
+  <section class="slide" id="slide-16" data-title="Cierre">
+    <p class="eyebrow">Para cerrar</p>
+    <h2 class="slide-title">Nos leemos en el foro</h2>
+    <p class="note">Tutoría sincrónica el miércoles, enlace en el aula y grabación disponible después. Foro de dudas con respuesta dentro de las 24 horas.</p>
+    <div class="contact-recap">
+      <span>Eduardo Luis Sierra Fragozo</span>
+      <span><a href="mailto:elsierra@uniguajira.edu.co">elsierra@uniguajira.edu.co</a></span>
+      <span>Internet de las Cosas · Clase 14</span>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var deck = document.getElementById('deck');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var dotsWrap = document.getElementById('dots');
+  var counter = document.getElementById('counter');
+  var progress = document.getElementById('progress');
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var total = slides.length;
+  var current = 0;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  slides.forEach(function (slide, i) {
+    var dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'dots__dot';
+    dot.setAttribute('aria-label', 'Ir a: ' + (slide.dataset.title || ('Diapositiva ' + (i + 1))));
+    dot.addEventListener('click', function () { goTo(i); });
+    dotsWrap.appendChild(dot);
+  });
+  var dots = Array.prototype.slice.call(dotsWrap.children);
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function setActive(i) {
+    current = i;
+    dots.forEach(function (d, idx) { d.classList.toggle('is-active', idx === i); });
+    if (dots[i]) dots[i].setAttribute('aria-current', 'true');
+    dots.forEach(function (d, idx) { if (idx !== i) d.removeAttribute('aria-current'); });
+    counter.textContent = pad(i + 1) + ' / ' + pad(total);
+    progress.style.width = (((i + 1) / total) * 100) + '%';
+    prevBtn.disabled = i === 0;
+    nextBtn.disabled = i === total - 1;
+  }
+
+  function goTo(i) {
+    var target = Math.min(Math.max(i, 0), total - 1);
+    slides[target].scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+        setActive(slides.indexOf(entry.target));
+      }
+    });
+  }, { root: deck, threshold: [0.6] });
+  slides.forEach(function (s) { io.observe(s); });
+
+  document.addEventListener('keydown', function (e) {
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].indexOf(e.key) > -1) {
+      e.preventDefault();
+      goTo(current + 1);
+    } else if (['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) > -1) {
+      e.preventDefault();
+      goTo(current - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      goTo(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      goTo(total - 1);
+    }
+  });
+
+  prevBtn.addEventListener('click', function () { goTo(current - 1); });
+  nextBtn.addEventListener('click', function () { goTo(current + 1); });
+
+  setActive(0);
+})();
+</script>
+</body>
+</html>

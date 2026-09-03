@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>IoT orientado a Visión Artificial — AIoT / Edge Vision</title>
-<meta name="description" content="Presentación de la electiva — IoT orientado a Visión Artificial (AIoT / Edge Vision), Universidad de La Guajira.">
+<title>IoT orientado a Visión Artificial</title>
+<meta name="description" content="Material de la asignatura — IoT orientado a Visión Artificial (AIoT / Edge Vision), Universidad de La Guajira.">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,14 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <style>
-  /*
-    Mismo sistema visual que el resto de las asignaturas (ver Fundamentos de
-    Diseño Gráfico y Desarrollo de Videojuegos): deck fijado en light mode a
-    propósito, es material para proyectar en clase y no debe cambiar de
-    apariencia según el modo del sistema del computador donde se presente.
-
-    Tipografías con fallback a system fonts por si el salón no tiene internet.
-  */
+  /* Mismo sistema visual de los decks de clase, fijado en light mode. */
   :root {
     color-scheme: light;
     --paper: #F2F4F5;
@@ -27,8 +20,6 @@
     --muted: #5B5F66;
     --line: #D7DADD;
     --red: #D6231D;
-    --red-ink: #FFFFFF;
-    --red-wash: #FBE9E8;
 
     --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
     --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -57,28 +48,20 @@
 
   a { color: inherit; }
 
-  /* ---------- Deck mechanics ---------- */
-  .deck {
-    height: 100dvh;
-    overflow-y: scroll;
-    overflow-x: hidden;
-    scroll-snap-type: y mandatory;
-    scroll-behavior: smooth;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .deck { scroll-behavior: auto; }
-  }
+  .frame { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  .frame__tick { position: absolute; width: 20px; height: 20px; }
+  .frame__tick--tl { top: 14px; left: 14px; border-top: 1.5px solid var(--muted); border-left: 1.5px solid var(--muted); }
+  .frame__tick--tr { top: 14px; right: 14px; border-top: 1.5px solid var(--muted); border-right: 1.5px solid var(--muted); }
 
-  .slide {
+  .hub {
+    max-width: 880px;
+    margin: 0 auto;
     min-height: 100dvh;
-    width: 100%;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
+    padding: clamp(64px, 11vh, 128px) var(--gutter) clamp(48px, 8vh, 96px);
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: clamp(72px, 10vh, 120px) var(--gutter);
-    position: relative;
+    gap: clamp(44px, 7vh, 68px);
   }
 
   .eyebrow {
@@ -90,363 +73,96 @@
     margin: 0 0 18px;
   }
 
-  .section-index {
-    display: inline-block;
-    font-family: var(--font-mono);
-    font-size: clamp(12px, 1.1vw, 14px);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--red);
-    border: 1px solid var(--red);
-    border-radius: 999px;
-    padding: 5px 14px;
-    margin: 0 0 22px;
-  }
-
-  .slide-title {
+  .hub__title {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: clamp(2rem, 4.6vw, 3.4rem);
-    line-height: 1.05;
-    letter-spacing: -0.02em;
-    margin: 0 0 clamp(28px, 4vw, 48px);
+    font-size: clamp(2.4rem, 7vw, 4.6rem);
+    line-height: 0.98;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    margin: 0 0 20px;
     text-wrap: balance;
-    max-width: 20ch;
+    max-width: 15ch;
   }
 
-  /* ---------- Slide 1 — title ---------- */
-  .slide--title .title {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: clamp(2.6rem, 8vw, 6rem);
-    line-height: 0.95;
-    letter-spacing: -0.035em;
-    text-transform: uppercase;
-    margin: 0 0 clamp(36px, 6vw, 64px);
-    text-wrap: balance;
-    max-width: 16ch;
-  }
-
-  .meta-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: clamp(24px, 5vw, 56px);
-    margin: 0 0 clamp(32px, 5vw, 48px);
-    padding: 0;
-  }
-  .meta-row > div { display: flex; flex-direction: column; gap: 4px; }
-  .meta-row dt {
+  .context {
     font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.04em;
     color: var(--muted);
-  }
-  .meta-row dd {
     margin: 0;
-    font-family: var(--font-mono);
-    font-size: clamp(18px, 2vw, 22px);
-    font-weight: 500;
   }
+  .context a { text-decoration: underline; text-underline-offset: 3px; }
+  .context a:hover { color: var(--red); }
 
-  .docente {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 4px 14px;
-    padding-top: clamp(22px, 4vw, 30px);
-    border-top: 1px solid var(--line);
-    max-width: 720px;
-  }
-  .docente__name { margin: 0; font-weight: 600; font-size: 1.1rem; }
-  .docente__email {
-    margin: 0;
-    font-family: var(--font-mono);
-    font-size: 0.92rem;
-    color: var(--muted);
-  }
-  .docente__email a { text-decoration: underline; text-underline-offset: 3px; }
-  .docente__email a:hover { color: var(--red); }
-
-  .hint {
-    position: absolute;
-    left: var(--gutter);
-    bottom: clamp(28px, 5vh, 48px);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  /* ---------- Rules / general lists ---------- */
-  .big-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  .menu {
     display: flex;
     flex-direction: column;
-    gap: clamp(20px, 3vw, 30px);
-    max-width: 900px;
-  }
-  .big-list li {
-    position: relative;
-    padding-left: clamp(24px, 2.6vw, 32px);
-    font-size: clamp(1.1rem, 2.1vw, 1.55rem);
-    line-height: 1.4;
-  }
-  .big-list li::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0.5em;
-    width: 9px;
-    height: 9px;
-    background: var(--red);
-  }
-  .big-list li b { font-weight: 600; }
-
-  .norma {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: clamp(22px, 3vw, 30px) 0 0;
+    border-top: 1px solid var(--ink);
   }
 
-  /* ---------- Agenda-style numbered list (pipeline / arquitectura) ---------- */
-  .agenda {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    max-width: 820px;
-  }
-  .agenda li {
-    display: flex;
-    align-items: baseline;
-    gap: clamp(20px, 3vw, 36px);
-    padding: clamp(16px, 2.4vw, 22px) 0;
-    border-bottom: 1px solid var(--line);
-  }
-  .agenda li:first-child { padding-top: 0; }
-  .agenda__num {
-    font-family: var(--font-mono);
-    font-size: clamp(0.9rem, 1.4vw, 1.05rem);
-    color: var(--red);
-    flex-shrink: 0;
-    width: 2.4ch;
-  }
-  .agenda__body { display: flex; flex-direction: column; gap: 4px; }
-  .agenda__name {
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: clamp(1.05rem, 1.8vw, 1.3rem);
-    letter-spacing: -0.005em;
-  }
-  .agenda__desc {
-    font-size: clamp(0.88rem, 1.2vw, 1rem);
-    color: var(--muted);
-  }
-
-  /* ---------- Evaluation bar ---------- */
-  .evaluation__lead {
-    max-width: 62ch;
-    color: var(--muted);
-    font-size: clamp(1rem, 1.4vw, 1.2rem);
-    margin: 0 0 clamp(28px, 4vw, 40px);
-  }
-
-  .bar {
-    display: flex;
-    width: 100%;
-    max-width: 980px;
-    height: clamp(48px, 7vw, 72px);
-    border: 1px solid var(--ink);
-    margin-bottom: 12px;
-    overflow: hidden;
-  }
-  .bar__segment {
-    flex-grow: var(--w);
-    flex-basis: 0;
+  .menu__item {
     display: flex;
     align-items: center;
-    justify-content: center;
-    background: var(--red);
-    color: var(--red-ink);
-    font-family: var(--font-mono);
-    font-size: clamp(12px, 1.3vw, 16px);
-    letter-spacing: 0.02em;
-    border-right: 1px solid var(--paper);
-    white-space: nowrap;
-    overflow: hidden;
+    gap: clamp(16px, 3.4vw, 30px);
+    padding: clamp(20px, 3vw, 28px) 6px;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+    color: var(--ink);
   }
-  .bar__segment:last-child { border-right: none; }
-  .bar__segment--ink { background: var(--ink); color: var(--paper); }
-  .bar__segment--muted { background: var(--muted); color: var(--paper); }
+  a.menu__item:hover { background: var(--paper-raised); }
+  a.menu__item:hover .menu__name { color: var(--red); }
+  a.menu__item:hover .menu__arrow { color: var(--red); transform: translateX(3px); }
+  a.menu__item:focus-visible { outline: 2px solid var(--red); outline-offset: -2px; }
 
-  .bar__caption {
+  .menu__num {
     font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--muted);
-    letter-spacing: 0.04em;
-    margin: 0;
+    font-size: clamp(0.9rem, 1.6vw, 1.05rem);
+    color: var(--red);
+    width: 2.6ch;
+    flex-shrink: 0;
   }
+  .menu__item--soon .menu__num { color: var(--muted); }
 
-  /* ---------- Corte detail (Corte 1 / 2 / 3) ---------- */
-  .corte {
-    max-width: 820px;
-    width: 100%;
-    border: 1px solid var(--line);
-    background: var(--paper-raised);
-  }
-  .corte > header {
+  .menu__body {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    padding: clamp(18px, 2.4vw, 26px) clamp(22px, 3vw, 32px);
-    border-bottom: 3px solid var(--ink);
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
   }
-  .corte__num {
+  .menu__name {
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: clamp(1.1rem, 1.8vw, 1.5rem);
-    text-transform: uppercase;
+    font-size: clamp(1.1rem, 2.2vw, 1.5rem);
     letter-spacing: -0.01em;
   }
-  .corte__weight {
-    font-family: var(--font-mono);
-    font-size: clamp(1.5rem, 2.6vw, 2.1rem);
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-    color: var(--red);
-  }
-  .corte__items {
-    padding: clamp(4px, 1vw, 8px) clamp(22px, 3vw, 32px) clamp(20px, 2.6vw, 28px);
-    display: flex;
-    flex-direction: column;
-  }
-  .corte-item { padding: clamp(16px, 2vw, 22px) 0; border-bottom: 1px solid var(--line); }
-  .corte-item:last-child { border-bottom: none; }
-  .corte-item__row {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 10px;
-  }
-  .corte-item__name { font-size: clamp(1rem, 1.6vw, 1.25rem); font-weight: 500; }
-  .corte-item__pct {
-    font-family: var(--font-mono);
-    font-size: clamp(1rem, 1.6vw, 1.25rem);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-  .corte-item__note {
-    display: block;
-    font-family: var(--font-mono);
-    font-size: 11px;
+  .menu__desc {
+    font-size: clamp(0.88rem, 1.3vw, 1rem);
     color: var(--muted);
-    margin-top: 4px;
   }
-  .meter { height: 6px; background: var(--line); width: 100%; }
-  .meter > span { display: block; height: 100%; background: var(--red); width: calc(var(--pct) * 1%); }
 
-  /* ---------- Chrome: frame, progress, counter, dots, controls ---------- */
-  .frame { position: fixed; inset: 0; pointer-events: none; z-index: 25; }
-  .frame__tick { position: absolute; width: 20px; height: 20px; }
-  .frame__tick--tl { top: 14px; left: 14px; border-top: 1.5px solid var(--muted); border-left: 1.5px solid var(--muted); }
-  .frame__tick--tr { top: 14px; right: 14px; border-top: 1.5px solid var(--muted); border-right: 1.5px solid var(--muted); }
-
-  .progress {
-    position: fixed;
-    top: 0; left: 0;
-    height: 3px;
-    background: var(--red);
-    width: 9%;
-    z-index: 30;
-    transition: width 0.25s ease;
+  .menu__arrow {
+    font-family: var(--font-mono);
+    color: var(--muted);
+    flex-shrink: 0;
+    transition: transform 0.15s ease, color 0.15s ease;
   }
-  @media (prefers-reduced-motion: reduce) { .progress { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .menu__arrow { transition: none; } }
 
-  .counter {
-    position: fixed;
-    top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
+  .menu__item--soon { color: var(--muted); }
+
+  .hub__foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
     font-family: var(--font-mono);
     font-size: 12px;
-    letter-spacing: 0.06em;
-    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
     color: var(--muted);
-    background: color-mix(in srgb, var(--paper) 88%, transparent);
-    border: 1px solid var(--line);
-    padding: 4px 12px;
-    z-index: 30;
   }
-
-  .brandmark {
-    position: fixed;
-    bottom: 20px;
-    left: var(--gutter);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--muted);
-    text-decoration: none;
-    z-index: 30;
-    display: none;
-  }
-
-  .dots {
-    position: fixed;
-    right: 18px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 30;
-  }
-  .dots__dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    border: 1px solid var(--muted);
-    background: transparent;
-    padding: 0;
-    cursor: pointer;
-  }
-  .dots__dot.is-active { background: var(--red); border-color: var(--red); width: 10px; height: 10px; }
-  .dots__dot:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
-
-  .controls { position: fixed; bottom: 20px; right: 24px; display: flex; gap: 8px; z-index: 30; }
-  .controls button {
-    width: 40px; height: 40px;
-    border: 1px solid var(--ink);
-    background: var(--paper-raised);
-    color: var(--ink);
-    font-family: var(--font-mono);
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .controls button:hover { background: var(--ink); color: var(--paper); }
-  .controls button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
-  .controls button:disabled { opacity: 0.35; cursor: default; }
-  .controls button:disabled:hover { background: var(--paper-raised); color: var(--ink); }
-
-  @media (min-width: 720px) {
-    .brandmark { display: block; }
-  }
-  @media (max-width: 560px) {
-    .dots { display: none; }
-  }
+  .hub__foot a { text-decoration: underline; text-underline-offset: 3px; }
+  .hub__foot a:hover { color: var(--red); }
 </style>
 </head>
 <body>
@@ -455,213 +171,56 @@
   <span class="frame__tick frame__tick--tl"></span>
   <span class="frame__tick frame__tick--tr"></span>
 </div>
-<div class="progress" id="progress"></div>
-<div class="counter" id="counter">01 / 08</div>
-<span class="brandmark">IoT · AIoT / Edge Vision</span>
-<nav class="dots" id="dots" aria-label="Navegación de diapositivas"></nav>
-<div class="controls">
-  <button type="button" id="prevBtn" aria-label="Diapositiva anterior">‹</button>
-  <button type="button" id="nextBtn" aria-label="Siguiente diapositiva">›</button>
+
+<div class="hub">
+
+  <header>
+    <p class="eyebrow">Universidad de La Guajira · Facultad de Ingeniería</p>
+    <h1 class="hub__title">IoT orientado a<br>Visión Artificial</h1>
+    <p class="context">Eduardo Luis Sierra Fragozo · <a href="mailto:elsierra@uniguajira.edu.co">elsierra@uniguajira.edu.co</a></p>
+  </header>
+
+  <nav class="menu" aria-label="Material del curso">
+    <a class="menu__item" href="plan-de-aula.html">
+      <span class="menu__num">00</span>
+      <span class="menu__body">
+        <span class="menu__name">Plan de aula</span>
+        <span class="menu__desc">Presentación del curso, temario y evaluación corte a corte</span>
+      </span>
+      <span class="menu__arrow">→</span>
+    </a>
+    <a class="menu__item" href="VisionClase1_ImagenDigital.html">
+      <span class="menu__num">01</span>
+      <span class="menu__body">
+        <span class="menu__name">Clase 1 — ¿Qué es una imagen?</span>
+        <span class="menu__desc">Matriz de píxeles, muestreo y cuantización, RGB/RGBA y cómo la pantalla recrea el color</span>
+      </span>
+      <span class="menu__arrow">→</span>
+    </a>
+    <a class="menu__item" href="VisionClase2_Convolucion.html">
+      <span class="menu__num">02</span>
+      <span class="menu__body">
+        <span class="menu__name">Clase 2 — Convolución y filtros</span>
+        <span class="menu__desc">Kernels, suavizado (promedio, gaussiano, mediana) y bordes (Sobel, Laplaciano, Canny) en OpenCV</span>
+      </span>
+      <span class="menu__arrow">→</span>
+    </a>
+    <a class="menu__item" href="https://colab.research.google.com/github/eduardosierraf/iot-vision-artificial/blob/main/Clase2_Convolucion.ipynb" target="_blank" rel="noopener">
+      <span class="menu__num">03</span>
+      <span class="menu__body">
+        <span class="menu__name">Notebook — Clase 2 en Colab</span>
+        <span class="menu__desc">Cuaderno práctico para ejecutar los filtros de la Clase 2 con OpenCV</span>
+      </span>
+      <span class="menu__arrow">→</span>
+    </a>
+  </nav>
+
+  <footer class="hub__foot">
+    <a href="https://sierraeduardo.com" target="_blank" rel="noopener">sierraeduardo.com</a>
+    <span>·</span>
+    <a href="https://github.com/eduardosierraf/iot-vision-artificial" target="_blank" rel="noopener">Repositorio</a>
+  </footer>
+
 </div>
-
-<main class="deck" id="deck">
-
-  <section class="slide slide--title" id="slide-1" data-title="Portada">
-    <p class="eyebrow">Electiva · AIoT / Edge Vision</p>
-    <h1 class="title">IoT orientado a<br>Visión Artificial</h1>
-    <dl class="meta-row">
-      <div><dt>Programa</dt><dd>Ingeniería de Sistemas</dd></div>
-      <div><dt>Facultad</dt><dd>Ingeniería</dd></div>
-      <div><dt>Universidad</dt><dd>Uniguajira</dd></div>
-    </dl>
-    <div class="docente">
-      <p class="docente__name">Eduardo Luis Sierra Fragozo</p>
-      <p class="docente__email"><a href="mailto:elsierra@uniguajira.edu.co">elsierra@uniguajira.edu.co</a></p>
-    </div>
-    <p class="hint">Desliza o pulsa → para continuar</p>
-  </section>
-
-  <section class="slide" id="slide-2" data-title="Presentación del curso">
-    <span class="section-index">El curso</span>
-    <h2 class="slide-title">La cámara como sensor, el modelo como procesamiento</h2>
-    <ul class="big-list">
-      <li>Esta electiva es <b>IoT</b>, orientada a <b>Visión Artificial aplicada a IoT (AIoT / Edge Vision)</b>: el mismo pipeline de siempre, con otro tipo de sensor.</li>
-      <li>El pipeline no cambia: <b>sensor → procesamiento → red → acción.</b> Lo que cambia es el sensor — ahora es una <b>cámara</b> — y la capa de procesamiento, que aquí es un <b>modelo de visión artificial</b>.</li>
-      <li>Curso de <b>enfoque práctico</b>: se trabaja sobre modelos y pipelines de visión, <b>sin diseño de circuitos</b> ni electrónica análoga.</li>
-    </ul>
-  </section>
-
-  <section class="slide" id="slide-3" data-title="Temario">
-    <span class="section-index">Temario</span>
-    <h2 class="slide-title">Unidades del curso</h2>
-    <ol class="agenda">
-      <li><span class="agenda__num">01</span><span class="agenda__body"><span class="agenda__name">Fundamentos de IoT y arquitectura AIoT</span></span></li>
-      <li><span class="agenda__num">02</span><span class="agenda__body"><span class="agenda__name">Visión por computador con Python y OpenCV</span></span></li>
-      <li><span class="agenda__num">03</span><span class="agenda__body"><span class="agenda__name">Modelos de visión preentrenados: clasificación y detección</span></span></li>
-      <li><span class="agenda__num">04</span><span class="agenda__body"><span class="agenda__name">Del modelo a la red: transmisión de resultados</span></span></li>
-      <li><span class="agenda__num">05</span><span class="agenda__body"><span class="agenda__name">De la red a la acción: alertas y actuadores</span></span></li>
-      <li><span class="agenda__num">06</span><span class="agenda__body"><span class="agenda__name">Integración y despliegue del pipeline completo</span></span></li>
-    </ol>
-  </section>
-
-  <section class="slide" id="slide-4" data-title="Unidad 01 — Arquitectura">
-    <span class="section-index">Unidad 01 · Fundamentos de IoT</span>
-    <h2 class="slide-title">Arquitectura del pipeline AIoT</h2>
-    <ol class="agenda">
-      <li><span class="agenda__num">01</span><span class="agenda__body"><span class="agenda__name">Percepción (sensor)</span><span class="agenda__desc">Cámara RGB, de profundidad o térmica: el sensor ahora captura una imagen en vez de un solo valor analógico</span></span></li>
-      <li><span class="agenda__num">02</span><span class="agenda__body"><span class="agenda__name">Procesamiento (edge)</span><span class="agenda__desc">Modelo de visión artificial corriendo en el dispositivo: detección, clasificación o segmentación en tiempo real</span></span></li>
-      <li><span class="agenda__num">03</span><span class="agenda__body"><span class="agenda__name">Red (conectividad)</span><span class="agenda__desc">Se transmite el resultado del modelo — una etiqueta, una coordenada, una alerta —, no el video crudo</span></span></li>
-      <li><span class="agenda__num">04</span><span class="agenda__body"><span class="agenda__name">Acción (actuador)</span><span class="agenda__desc">La decisión del modelo dispara una acción: un relé, una notificación, un sistema de control</span></span></li>
-    </ol>
-    <p class="norma">Mismo pipeline del IoT clásico — sensor → procesamiento → red → acción — con visión artificial en la capa de procesamiento</p>
-  </section>
-
-  <section class="slide" id="slide-5" data-title="Evaluación">
-    <span class="section-index">Evaluación</span>
-    <h2 class="slide-title">Cómo se compone la nota final</h2>
-    <p class="evaluation__lead">Tres cortes suman el 100% de la nota final. El proyecto crece corte a corte: cada entrega se construye sobre el pipeline del corte anterior.</p>
-    <div class="bar" role="img" aria-label="Distribución de cortes: Corte 1, 30 por ciento. Corte 2, 35 por ciento. Corte 3, 35 por ciento.">
-      <div class="bar__segment" style="--w:30">Corte 1 · 30%</div>
-      <div class="bar__segment bar__segment--ink" style="--w:35">Corte 2 · 35%</div>
-      <div class="bar__segment bar__segment--muted" style="--w:35">Corte 3 · 35%</div>
-    </div>
-    <p class="bar__caption">30 + 35 + 35 = 100% de la nota final</p>
-    <p class="norma">Distribución institucional de cortes · Reglamento Estudiantil, Acuerdo 026 de 2018 · Calificación de 0.0 a 5.0</p>
-  </section>
-
-  <section class="slide" id="slide-6" data-title="Corte 1">
-    <span class="section-index">Evaluación · Corte 1</span>
-    <h2 class="slide-title">Corte 1 — primer pipeline</h2>
-    <div class="corte">
-      <header><span class="corte__num">Total del corte</span><span class="corte__weight">30%</span></header>
-      <div class="corte__items">
-        <div class="corte-item">
-          <div class="corte-item__row"><span class="corte-item__name">Sustentación: pipeline básico</span><span class="corte-item__pct">20.0%</span></div>
-          <div class="meter"><span style="--pct:67"></span></div>
-          <span class="corte-item__note">Webcam + OpenCV + un modelo preentrenado que clasifica o detecta y muestra el resultado en pantalla — sensor y procesamiento, sin red ni acción todavía</span>
-        </div>
-        <div class="corte-item">
-          <div class="corte-item__row"><span class="corte-item__name">Exposición en grupo</span><span class="corte-item__pct">10.0%</span></div>
-          <div class="meter"><span style="--pct:33"></span></div>
-          <span class="corte-item__note">Cada grupo presenta un caso real de AIoT/Edge Vision: qué sensor, qué modelo y qué acción usa</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="slide" id="slide-7" data-title="Corte 2">
-    <span class="section-index">Evaluación · Corte 2</span>
-    <h2 class="slide-title">Corte 2 — pipeline completo</h2>
-    <div class="corte">
-      <header><span class="corte__num">Total del corte</span><span class="corte__weight">35%</span></header>
-      <div class="corte__items">
-        <div class="corte-item">
-          <div class="corte-item__row"><span class="corte-item__name">Entrega completa: red y acción</span><span class="corte-item__pct">20.0%</span></div>
-          <div class="meter"><span style="--pct:57"></span></div>
-          <span class="corte-item__note">El pipeline transmite el resultado del modelo (no el video crudo) y dispara una acción visible: alerta, log o sonido</span>
-        </div>
-        <div class="corte-item">
-          <div class="corte-item__row"><span class="corte-item__name">Preentrega del proyecto</span><span class="corte-item__pct">15.0%</span></div>
-          <div class="meter"><span style="--pct:43"></span></div>
-          <span class="corte-item__note">Obligatoria — diagrama de arquitectura del proyecto propio y prototipo del envío del resultado</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="slide" id="slide-8" data-title="Corte 3">
-    <span class="section-index">Evaluación · Corte 3</span>
-    <h2 class="slide-title">Corte 3 — cierre del proyecto</h2>
-    <div class="corte">
-      <header><span class="corte__num">Total del corte</span><span class="corte__weight">35%</span></header>
-      <div class="corte__items">
-        <div class="corte-item">
-          <div class="corte-item__row"><span class="corte-item__name">Contribución en la sala</span><span class="corte-item__pct">25.0%</span></div>
-          <div class="meter"><span style="--pct:71"></span></div>
-          <span class="corte-item__note">Sustentación del proyecto completo frente al grupo, explicando cada capa del pipeline</span>
-        </div>
-        <div class="corte-item">
-          <div class="corte-item__row"><span class="corte-item__name">Entrega final</span><span class="corte-item__pct">10.0%</span></div>
-          <div class="meter"><span style="--pct:29"></span></div>
-          <span class="corte-item__note">Proyecto documentado: README con arquitectura y capturas o video de funcionamiento</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-</main>
-
-<script>
-(function () {
-  var deck = document.getElementById('deck');
-  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
-  var dotsWrap = document.getElementById('dots');
-  var counter = document.getElementById('counter');
-  var progress = document.getElementById('progress');
-  var prevBtn = document.getElementById('prevBtn');
-  var nextBtn = document.getElementById('nextBtn');
-  var total = slides.length;
-  var current = 0;
-  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  slides.forEach(function (slide, i) {
-    var dot = document.createElement('button');
-    dot.type = 'button';
-    dot.className = 'dots__dot';
-    dot.setAttribute('aria-label', 'Ir a: ' + (slide.dataset.title || ('Diapositiva ' + (i + 1))));
-    dot.addEventListener('click', function () { goTo(i); });
-    dotsWrap.appendChild(dot);
-  });
-  var dots = Array.prototype.slice.call(dotsWrap.children);
-
-  function pad(n) { return String(n).padStart(2, '0'); }
-
-  function setActive(i) {
-    current = i;
-    dots.forEach(function (d, idx) { d.classList.toggle('is-active', idx === i); });
-    if (dots[i]) dots[i].setAttribute('aria-current', 'true');
-    dots.forEach(function (d, idx) { if (idx !== i) d.removeAttribute('aria-current'); });
-    counter.textContent = pad(i + 1) + ' / ' + pad(total);
-    progress.style.width = (((i + 1) / total) * 100) + '%';
-    prevBtn.disabled = i === 0;
-    nextBtn.disabled = i === total - 1;
-  }
-
-  function goTo(i) {
-    var target = Math.min(Math.max(i, 0), total - 1);
-    slides[target].scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
-  }
-
-  var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry) {
-      if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
-        setActive(slides.indexOf(entry.target));
-      }
-    });
-  }, { root: deck, threshold: [0.6] });
-  slides.forEach(function (s) { io.observe(s); });
-
-  document.addEventListener('keydown', function (e) {
-    if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].indexOf(e.key) > -1) {
-      e.preventDefault();
-      goTo(current + 1);
-    } else if (['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) > -1) {
-      e.preventDefault();
-      goTo(current - 1);
-    } else if (e.key === 'Home') {
-      e.preventDefault();
-      goTo(0);
-    } else if (e.key === 'End') {
-      e.preventDefault();
-      goTo(total - 1);
-    }
-  });
-
-  prevBtn.addEventListener('click', function () { goTo(current - 1); });
-  nextBtn.addEventListener('click', function () { goTo(current + 1); });
-
-  setActive(0);
-})();
-</script>
 </body>
 </html>

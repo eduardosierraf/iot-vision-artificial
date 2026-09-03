@@ -11,8 +11,10 @@ Material independiente de periodo académico.
 
 ## Contenido del repositorio
 
-- `index.html` — presentación de la asignatura (portada, presentación del
-  curso, temario, Unidad 01 · Fundamentos de IoT — Arquitectura, y
+- `index.html` — índice del curso: lista todo el material publicado para
+  que los estudiantes lo encuentren desde un solo enlace.
+- `plan-de-aula.html` — presentación de la asignatura (portada, presentación
+  del curso, temario, Unidad 01 · Fundamentos de IoT — Arquitectura, y
   evaluación corte a corte: Corte 1, 2 y 3).
 - `VisionClase1_ImagenDigital.html` — Unidad 02 · Clase 1: qué es una
   imagen digital (matriz de píxeles, muestreo y cuantización, RGB/RGBA,
@@ -37,10 +39,14 @@ de referencia: Python + OpenCV, sin diseño de circuitos.
 | 2 | 35% | Entrega completa: transmisión del resultado (no video crudo) + acción visible (20%) | Preentrega obligatoria: diagrama de arquitectura + prototipo de envío (15%) |
 | 3 | 35% | Contribución en la sala: sustentación final del proyecto (25%) | Entrega final documentada — README, capturas o video (10%) |
 
-## Cómo abrir la presentación
+## Cómo abrir el material
 
-Abre `index.html` directamente en el navegador. No requiere build ni
-dependencias — es HTML/CSS/JS plano.
+Publicado en <https://eduardosierraf.github.io/iot-vision-artificial/>. En
+local, abre `index.html` en el navegador y desde ahí entra a cualquier
+clase. No requiere build ni dependencias — es HTML/CSS/JS plano.
+
+Al agregar una clase nueva, súmala también al listado de `index.html`; es
+la única página por la que los estudiantes llegan al resto.
 
 Navegación por teclado: flechas / `Page Up` / `Page Down` / `Space` para
 avanzar, `Home` / `End` para ir al inicio o al final.
